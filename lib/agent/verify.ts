@@ -1,0 +1,77 @@
+import { distance as levenshtein } from "fastest-levenshtein";
+import { normalize } from "../ingest/normalize";
+
+export { normalize };
+
+export type MatchResult = { ok: boolean; score: number };
+
+const OK_THRESHOLD = 0.92;
+const SHORT_QUOTE_WORDS = 6;
+
+/**
+ * Checks whether `quote` appears in `pageNorm` (already normalize()'d).
+ * Exact substring is score 1. Otherwise a sliding token window scored by
+ * normalized Levenshtein similarity. Quotes under 6 words require an exact
+ * substring match (fuzzy matching on very short strings is unreliable).
+ */
+export function matchQuote(quote: string, pageNorm: string): MatchResult {
+  const qNorm = normalize(quote);
+  if (qNorm.length === 0) return { ok: false, score: 0 };
+
+  if (pageNorm.includes(qNorm)) return { ok: true, score: 1 };
+
+  const qWords = qNorm.split(" ");
+  if (qWords.length < SHORT_QUOTE_WORDS) return { ok: false, score: 0 };
+
+  const pageWords = pageNorm.split(" ");
+  const qLen = qWords.length;
+  const minLen = Math.max(1, Math.floor(qLen * 0.85));
+  const maxLen = Math.ceil(qLen * 1.15);
+
+  let best = 0;
+  for (let winLen = minLen; winLen <= maxLen; winLen++) {
+    for (let start = 0; start + winLen <= pageWords.length; start++) {
+      const winStr = pageWords.slice(start, start + winLen).join(" ");
+      const maxStrLen = Math.max(qNorm.length, winStr.length);
+      if (maxStrLen === 0) continue;
+      const dist = levenshtein(qNorm, winStr);
+      const score = 1 - dist / maxStrLen;
+      if (score > best) best = score;
+      if (best >= 1) break;
+    }
+    if (best >= 1) break;
+  }
+
+  return { ok: best >= OK_THRESHOLD, score: best };
+}
+
+export type EvidenceRow = { short_id: string; quote: string; page_id: string; verified: boolean };
+export type PageRow = { id: string; text_norm: string };
+
+const CITE_RE = /\[cite:([A-Za-z0-9_]+)\]/g;
+
+export function extractCites(bodyMd: string): string[] {
+  const ids = new Set<string>();
+  for (const m of bodyMd.matchAll(CITE_RE)) ids.add(m[1]);
+  return [...ids];
+}
+
+/**
+ * Verifies every [cite:E#] in a draft: the id must be known, its evidence
+ * already verified, and its quote must still match its source page.
+ */
+export function verifyDraft(
+  bodyMd: string,
+  evidenceById: Record<string, EvidenceRow>,
+  pagesById: Record<string, PageRow>
+): Array<{ short_id: string; ok: boolean; score: number }> {
+  const cites = extractCites(bodyMd);
+  return cites.map((short_id) => {
+    const ev = evidenceById[short_id];
+    if (!ev || !ev.verified) return { short_id, ok: false, score: 0 };
+    const page = pagesById[ev.page_id];
+    if (!page) return { short_id, ok: false, score: 0 };
+    const { ok, score } = matchQuote(ev.quote, page.text_norm);
+    return { short_id, ok, score };
+  });
+}
