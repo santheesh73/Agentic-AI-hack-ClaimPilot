@@ -1,0 +1,9 @@
+{
+  "name": "case_b_non_disclosure_missing_diagnosis_date",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_b.txt",
+  "answers": {
+    "diagnosis_date": "The hypertension was first diagnosed in March 2025, after the policy's inception date of 10 January 2025."
+  },
+  "expected": "STRONG"
+}

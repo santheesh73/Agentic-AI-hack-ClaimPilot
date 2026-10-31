@@ -304,7 +304,7 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
   const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
-  const needsUser = c5?.answer === "unknown" && unresolvedMissing.length > 0;
+  const needsUser = (c5?.answer === "unknown" || c5?.answer === "no") && unresolvedMissing.length > 0;
 
   const nextState: CaseState = needsUser ? "AWAITING_USER" : "DECIDE";
 
@@ -333,7 +333,11 @@ export function decideVerdict(rubric: Check[]): Verdict {
   const c3 = get("C3_OVERRIDING_CLAUSE");
   const c4 = get("C4_EXPLICIT_EXCLUSION");
 
-  if (c4?.answer === "yes") return "WEAK";
+  // The cited clause genuinely exists, its conditions hold, and nothing overrides it
+  // -- the rejection is correctly applied -- or some other clause explicitly excludes it.
+  if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
+    return "WEAK";
+  }
   if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes") return "STRONG";
   return "ARGUABLE";
 }

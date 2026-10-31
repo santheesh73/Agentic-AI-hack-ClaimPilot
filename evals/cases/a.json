@@ -1,0 +1,6 @@
+{
+  "name": "case_a_ped_waiting_period_completed",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_a.txt",
+  "expected": "STRONG"
+}

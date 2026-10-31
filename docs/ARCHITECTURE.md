@@ -64,7 +64,9 @@ If verification fails, the agent redrafts (up to 2 times), then as a last resort
 
 ## Model provider
 
-Model calls go through `lib/models.ts` using Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK's `generateObject` + Zod. `MODEL_FAST` (default `gemini-2.5-flash`) handles extraction, query writing, and short explanations; `MODEL_STRONG` (default `gemini-2.5-pro`) handles assessment, drafting, and red-teaming.
+Model calls go through `lib/models.ts` using Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK's `generateObject` + Zod. `MODEL_FAST` and `MODEL_STRONG` both default to `gemini-2.5-flash`.
+
+**Free-tier constraint.** A free (unbilled) Gemini API key has zero quota for `gemini-2.5-pro` / `gemini-3.1-pro-preview` (404 "no longer available to new users" / quota-exceeded errors) and a hard cap of 20 requests/day for `gemini-2.5-flash`. One case run through the full pipeline (extract, assess, draft, verify, red-team, plus any redraft) costs 4-7 requests, so a free key supports only a handful of case runs per day. For real use, set `MODEL_STRONG` to a pro-tier model and enable billing on the Gemini API key.
 
 <!-- TODO(phase-b): the original design used Anthropic's ephemeral prompt caching on the large policy-pages context reused across ASSESS/DRAFT/REDTEAM. Gemini's context-caching API differs (explicit cache objects with their own lifecycle) and isn't wired up yet; `CachedTextPart.cache` is currently a no-op in lib/models.ts. -->
 

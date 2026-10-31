@@ -1,0 +1,6 @@
+{
+  "name": "case_c_cosmetic_surgery_explicit_exclusion",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_c.txt",
+  "expected": "WEAK"
+}

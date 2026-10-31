@@ -71,7 +71,13 @@ async function runCase(evalCase: EvalCase) {
 
   if (state === "AWAITING_USER" && evalCase.answers) {
     const { recordAnswers } = await import("../lib/agent/machine");
-    await recordAnswers(caseId, evalCase.answers);
+    const { data: pausedCase } = await db.from("cases").select("missing_facts").eq("id", caseId).single();
+    const missingFacts = (pausedCase?.missing_facts ?? []) as Array<{ key: string }>;
+    // The model names missing-fact keys dynamically, so apply the eval's single
+    // canned answer to whichever key(s) it actually asked for.
+    const fallbackAnswer = Object.values(evalCase.answers)[0];
+    const answers = Object.fromEntries(missingFacts.map((mf) => [mf.key, fallbackAnswer]));
+    await recordAnswers(caseId, answers);
     for (let i = 0; i < MAX_LOOP_STEPS; i++) {
       const result = await runStep(caseId);
       state = result.state;
