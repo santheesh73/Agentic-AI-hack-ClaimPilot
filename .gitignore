@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ad-hoc throwaway scripts (not scripts/, which holds committed dev tools)
+/test-*.mjs
+/scratch-*.mjs
