@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "eval": "tsx evals/run.ts"
+    "eval": "tsx --env-file=.env.local evals/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.94",

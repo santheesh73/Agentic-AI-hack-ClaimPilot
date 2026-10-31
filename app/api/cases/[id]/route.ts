@@ -22,10 +22,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const deadlines = deadlinesForUi(caseRow.complaint_sent_on, caseRow.claim_amount_inr);
 
+  const pageIds = [...new Set((evidence ?? []).map((e) => e.page_id))];
+  const { data: evidencePages } = pageIds.length
+    ? await db.from("pages").select("id, page_no").in("id", pageIds)
+    : { data: [] as Array<{ id: string; page_no: number }> };
+  const pageNoById = new Map((evidencePages ?? []).map((p) => [p.id, p.page_no]));
+  const evidenceWithPageNo = (evidence ?? []).map((e) => ({ ...e, page_no: pageNoById.get(e.page_id) ?? null }));
+
   return NextResponse.json({
     case: caseRow,
     events: events ?? [],
-    evidence: evidence ?? [],
+    evidence: evidenceWithPageNo,
     drafts: drafts ?? [],
     followups: followups ?? [],
     documents: documents ?? [],
