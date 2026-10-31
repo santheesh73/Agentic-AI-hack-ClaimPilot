@@ -68,12 +68,20 @@ pnpm build    # production build
 
 ## Evals
 
-<!-- TODO(phase-b): paste the `pnpm eval` results table here once samples/policy.pdf is available -->
+`evals/cases/{a,b,c}.json` cover: Case A (PED exclusion cited, but the 48-month waiting period had already run out — expected STRONG), Case B (non-disclosure claim where the rejection letter omits the diagnosis date — expected AWAITING_USER, then STRONG once answered), Case C (cosmetic surgery, an exclusion that genuinely applies — expected WEAK).
+
+**Status at last commit:** `search_pages` was confirmed against the live database to correctly surface the relevant clauses (Excl01 pre-existing-disease exclusion, Excl08 cosmetic-surgery exclusion) for the sample policy. Running the full pipeline against live model calls surfaced two real bugs in the verdict/pause logic, now fixed (see git log). A full `pnpm eval` run and the resulting table could not be completed and pasted here yet because the Gemini API key in use hit its free-tier daily request cap mid-verification; rerun `pnpm eval` once that key has quota (or a billed key is configured) to get this table filled in, and treat the three expected verdicts above as the acceptance bar.
 
 ## What's AI-generated vs. human-directed
 
-See `docs/AI_DISCLOSURE.md`.
+See `docs/AI_DISCLOSURE.md` — including a disclosure that the sample policy document is an authored stand-in grounded in IRDAI's real standard clauses, not the originally-intended real insurer PDF.
+
+## Known gaps before this is submission-ready
+
+- `pnpm eval` has not been run to completion against the live Gemini key (quota-limited; see above) — the three verdicts should be reconfirmed.
+- The deployed Vercel URL has not been manually verified end-to-end in a browser.
+- No demo video yet.
 
 ## Demo video
 
-<!-- TODO: add link -->
+<!-- TODO: add link once recorded -->
