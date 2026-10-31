@@ -48,13 +48,13 @@ Every model call goes through a single helper (`lib/models.ts`) that applies a 3
 
 ## Stack
 
-Next.js 15 (App Router, TypeScript) + Tailwind + shadcn/ui, Supabase (Postgres + Storage, no vector DB), Anthropic via the Vercel AI SDK (`generateObject` + Zod), `unpdf` for PDF text extraction, `fastest-levenshtein` for fuzzy citation matching.
+Next.js 15 (App Router, TypeScript) + Tailwind + shadcn/ui, Supabase (Postgres + Storage, no vector DB), Google Gemini via the Vercel AI SDK (`generateObject` + Zod), `unpdf` for PDF text extraction, `fastest-levenshtein` for fuzzy citation matching.
 
 ## Setup
 
 ```bash
 pnpm install
-cp .env.example .env.local   # fill in ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+cp .env.example .env.local   # fill in GEMINI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 ```
 
 Apply `supabase/migrations/0001_init.sql` to your Supabase project (via the SQL editor or the Supabase CLI), and create a private Storage bucket named `documents`.

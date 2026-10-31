@@ -62,9 +62,11 @@ If verification fails, the agent redrafts (up to 2 times), then as a last resort
 | `redteam_review` | Draft + policy pages → insurer's best counter-argument | strong |
 | `schedule_followup` | Route + sent date → follow-up rows | none |
 
-## Prompt caching
+## Model provider
 
-The large policy-pages context passed to `assess_case` and `redteam_review` is marked with Anthropic's ephemeral prompt cache (`providerOptions.anthropic.cacheControl`) in `lib/models.ts`, since the same pages are reused across the assessment, the drafting loop, and the red-team pass within one case.
+Model calls go through `lib/models.ts` using Google Gemini (`@ai-sdk/google`) via the Vercel AI SDK's `generateObject` + Zod. `MODEL_FAST` (default `gemini-2.5-flash`) handles extraction, query writing, and short explanations; `MODEL_STRONG` (default `gemini-2.5-pro`) handles assessment, drafting, and red-teaming.
+
+<!-- TODO(phase-b): the original design used Anthropic's ephemeral prompt caching on the large policy-pages context reused across ASSESS/DRAFT/REDTEAM. Gemini's context-caching API differs (explicit cache objects with their own lifecycle) and isn't wired up yet; `CachedTextPart.cache` is currently a no-op in lib/models.ts. -->
 
 ## Security model
 
