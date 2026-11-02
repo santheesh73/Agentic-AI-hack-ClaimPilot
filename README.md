@@ -70,7 +70,18 @@ pnpm build    # production build
 
 `evals/cases/{a,b,c}.json` cover: Case A (PED exclusion cited, but the 48-month waiting period had already run out — expected STRONG), Case B (non-disclosure claim where the rejection letter omits the diagnosis date — expected AWAITING_USER, then STRONG once answered), Case C (cosmetic surgery, an exclusion that genuinely applies — expected WEAK).
 
-**Status at last commit:** `search_pages` was confirmed against the live database to correctly surface the relevant clauses (Excl01 pre-existing-disease exclusion, Excl08 cosmetic-surgery exclusion) for the sample policy. Running the full pipeline against live model calls surfaced two real bugs in the verdict/pause logic, now fixed (see git log). A full `pnpm eval` run and the resulting table could not be completed and pasted here yet because the Gemini API key in use hit its free-tier daily request cap mid-verification; rerun `pnpm eval` once that key has quota (or a billed key is configured) to get this table filled in, and treat the three expected verdicts above as the acceptance bar.
+**Confirmed against the live database and live Gemini calls** (via `scripts/prove-local.mjs`, since this environment's network policy blocks `pnpm eval`'s direct connection to Supabase -- see that script's header comment):
+
+- `search_pages` correctly surfaces the relevant clauses (Excl01 pre-existing-disease exclusion, Excl08 cosmetic-surgery exclusion) for the sample policy, ranked at the top.
+- All three cases reach their expected verdict and terminal/pause state:
+
+| Case | Verdict | State | Citations verified |
+| --- | --- | --- | --- |
+| A -- PED cited, waiting period already expired | STRONG | AWAITING_APPROVAL | 2/2 |
+| B -- non-disclosure, diagnosis date initially unknown | STRONG (after answering) | AWAITING_APPROVAL | 1/1 |
+| C -- cosmetic surgery, exclusion genuinely applies | WEAK | DONT_APPEAL | n/a (not drafted) |
+
+Getting here required fixing three real bugs found only by running the pipeline end-to-end against a real document and a real model, not caught by code review or the unit tests alone -- see the git log for `decideVerdict`'s missing WEAK case, the `AWAITING_USER` trigger only matching "unknown" and not "no", and the citation parser rejecting a model's slightly-off-spec `[cite: E1, E2]` formatting. Reproduce with `node --env-file=.env.local scripts/prove-local.mjs` once `samples/policy.pdf` and a working `GEMINI_API_KEY`/`MODEL_FAST`/`MODEL_STRONG` are set.
 
 ## What's AI-generated vs. human-directed
 
@@ -78,8 +89,8 @@ See `docs/AI_DISCLOSURE.md` — including a disclosure that the sample policy do
 
 ## Known gaps before this is submission-ready
 
-- `pnpm eval` has not been run to completion against the live Gemini key (quota-limited; see above) — the three verdicts should be reconfirmed.
-- The deployed Vercel URL has not been manually verified end-to-end in a browser.
+- `pnpm eval` itself (as opposed to the equivalent `scripts/prove-local.mjs` run above) has not been exercised, since this build environment cannot reach Supabase directly -- run it in an environment that can, to confirm the same results through the real DB-backed path.
+- The deployed Vercel URL has not been manually verified end-to-end in a browser (same network restriction).
 - No demo video yet.
 
 ## Demo video
