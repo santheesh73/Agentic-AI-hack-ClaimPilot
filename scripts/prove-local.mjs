@@ -183,7 +183,8 @@ async function runCase(caseName, policyPages, rejectionText, answers = {}) {
     });
     console.log(`  TRACE: Drafted appeal letter v${redraftCount + 1} (${verifiedEvidence.length} citable facts).`);
 
-    const cites = [...new Set([...draft.body_md.matchAll(/\[cite:([A-Za-z0-9_]+)\]/g)].map((m) => m[1]))];
+    const citeMatches = [...draft.body_md.matchAll(/\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g)];
+    const cites = [...new Set(citeMatches.flatMap((m) => m[1].split(",").map((s) => s.trim()).filter(Boolean)))];
     const evidenceByShortId = Object.fromEntries(verifiedEvidence.map((e) => [e.short_id, e]));
     verifyResults = cites.map((short_id) => {
       const e = evidenceByShortId[short_id];
@@ -198,7 +199,7 @@ async function runCase(caseName, policyPages, rejectionText, answers = {}) {
     redraftCount++;
     if (redraftCount >= 2) {
       const failedIds = verifyResults.filter((r) => !r.ok).map((r) => r.short_id);
-      const pattern = new RegExp(`\\[cite:(${failedIds.join("|")})\\]`);
+      const pattern = new RegExp(`\\[cite:\\s*[^\\]]*\\b(${failedIds.join("|")})\\b[^\\]]*\\]`);
       draft.body_md = draft.body_md.split(/(?<=[.!?])\s+/).filter((s) => !pattern.test(s)).join(" ");
       console.log(`  TRACE: Stripped ${failedIds.length} unverifiable sentence(s) after 2 redrafts.`);
       break;

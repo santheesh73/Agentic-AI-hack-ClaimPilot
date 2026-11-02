@@ -45,7 +45,7 @@ Rules:
 - Address it to the given addressee (for step insurer_gro: "The Grievance Redressal Officer, <insurer>").
 - Include policy, claim and patient references from the facts.
 - State the specific relief requested: reconsider and settle the claim amount.
-- Every sentence that relies on the policy must end with one or more [cite:E#] markers. Never cite an id not in the evidence list. Never assert policy content without a cite.
+- Every sentence that relies on the policy must end with one or more [cite:E#] markers. Format each marker exactly as [cite:E1] with no space after the colon; for multiple ids on one sentence, write one marker per id with no separator (e.g. [cite:E1][cite:E2]), never [cite:E1, E2]. Never cite an id not in the evidence list. Never assert policy content without a cite.
 - Do not invent regulations, timelines or case law. Mention the escalation path only as given in the route.
 - If a rebuttal is provided, add a paragraph that answers it directly, with cites.
 - End with an attachments list and this line: "This letter was prepared with the help of ClaimPilot and reviewed by the policyholder."`;

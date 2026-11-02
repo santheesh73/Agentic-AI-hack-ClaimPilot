@@ -417,7 +417,7 @@ async function runDraft(c: CaseRow): Promise<{ state: CaseState }> {
 function stripFailedSentences(bodyMd: string, failedIds: string[]): string {
   if (!failedIds.length) return bodyMd;
   const sentences = bodyMd.split(/(?<=[.!?])\s+/);
-  const failedPattern = new RegExp(`\\[cite:(${failedIds.join("|")})\\]`);
+  const failedPattern = new RegExp(`\\[cite:\\s*[^\\]]*\\b(${failedIds.join("|")})\\b[^\\]]*\\]`);
   return sentences.filter((s) => !failedPattern.test(s)).join(" ");
 }
 

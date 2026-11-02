@@ -48,11 +48,19 @@ export function matchQuote(quote: string, pageNorm: string): MatchResult {
 export type EvidenceRow = { short_id: string; quote: string; page_id: string; verified: boolean };
 export type PageRow = { id: string; text_norm: string };
 
-const CITE_RE = /\[cite:([A-Za-z0-9_]+)\]/g;
+// Tolerant of model formatting drift: optional space after the colon, and a
+// comma-separated list of ids in one marker (e.g. "[cite: E1, E2]"), which
+// models produce despite being told to write one id per marker with no space.
+const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g;
 
 export function extractCites(bodyMd: string): string[] {
   const ids = new Set<string>();
-  for (const m of bodyMd.matchAll(CITE_RE)) ids.add(m[1]);
+  for (const m of bodyMd.matchAll(CITE_RE)) {
+    for (const id of m[1].split(",")) {
+      const trimmed = id.trim();
+      if (trimmed) ids.add(trimmed);
+    }
+  }
   return [...ids];
 }
 

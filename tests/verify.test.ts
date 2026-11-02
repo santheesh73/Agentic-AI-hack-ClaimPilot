@@ -82,4 +82,19 @@ describe("verifyDraft", () => {
     const results = verifyDraft("Not covered. [cite:E99]", evidenceById, pagesById);
     expect(results).toEqual([{ short_id: "E99", ok: false, score: 0 }]);
   });
+
+  it("tolerates a space after the colon", () => {
+    const results = verifyDraft("The clause applies. [cite: E1]", evidenceById, pagesById);
+    expect(results).toEqual([{ short_id: "E1", ok: true, score: 1 }]);
+  });
+
+  it("tolerates a comma-separated list of ids in one marker", () => {
+    const evidence = {
+      ...evidenceById,
+      E2: { short_id: "E2", quote: "a continuous waiting period of 36 months", page_id: "p1", verified: true },
+    };
+    const results = verifyDraft("The clause applies. [cite: E1, E2]", evidence, pagesById);
+    expect(results.map((r) => r.short_id).sort()).toEqual(["E1", "E2"]);
+    expect(results.every((r) => r.ok)).toBe(true);
+  });
 });
