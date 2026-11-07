@@ -10,8 +10,10 @@ let pages: Page[];
 
 beforeAll(async () => {
   const buffer = await readFile(path.join(__dirname, "..", "samples", "policy.pdf"));
-  const bytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  pages = (await parsePdf(bytes)).filter((p) => p.text_norm.length >= 200);
+  // parsePdf() now coerces a Node Buffer to a plain Uint8Array internally
+  // (see lib/ingest/pdf.ts) -- this used to require an explicit workaround
+  // here before that bug was found and fixed.
+  pages = (await parsePdf(buffer)).filter((p) => p.text_norm.length >= 200);
   if (pages.length === 0) throw new Error("samples/policy.pdf produced no usable pages for property testing");
 });
 
@@ -81,7 +83,7 @@ describe("matchQuote property tests (against the real samples/policy.pdf)", () =
       ),
       { numRuns: 200 }
     );
-  });
+  }, 20_000); // the sliding-window Levenshtein search is slow under v8 coverage instrumentation
 
   it("random text not in the policy does not match", () => {
     const inventedWords = [
