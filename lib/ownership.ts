@@ -13,6 +13,11 @@ export async function getOwnedCase(caseId: string) {
     .eq("id", caseId)
     .eq("owner_id", ownerId)
     .maybeSingle();
-  if (error) throw error;
+  if (error) {
+    // Postgres' "invalid input syntax for type uuid" -- a malformed id in the
+    // URL is just a 404, not a server error.
+    if (error.code === "22P02") return null;
+    throw error;
+  }
   return data;
 }

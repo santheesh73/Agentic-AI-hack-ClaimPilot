@@ -11,7 +11,7 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote } from "./verify";
+import { matchQuote, extractCites } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
@@ -417,9 +417,9 @@ async function runDraft(c: CaseRow): Promise<{ state: CaseState }> {
 
 function stripFailedSentences(bodyMd: string, failedIds: string[]): string {
   if (!failedIds.length) return bodyMd;
+  const failedSet = new Set(failedIds);
   const sentences = bodyMd.split(/(?<=[.!?])\s+/);
-  const failedPattern = new RegExp(`\\[cite:\\s*[^\\]]*\\b(${failedIds.join("|")})\\b[^\\]]*\\]`);
-  return sentences.filter((s) => !failedPattern.test(s)).join(" ");
+  return sentences.filter((s) => !extractCites(s).some((id) => failedSet.has(id))).join(" ");
 }
 
 async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {

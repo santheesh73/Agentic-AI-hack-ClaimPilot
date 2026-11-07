@@ -51,17 +51,28 @@ export type PageRow = { id: string; text_norm: string };
 // Tolerant of model formatting drift: optional space after the colon, and a
 // comma-separated list of ids in one marker (e.g. "[cite: E1, E2]"), which
 // models produce despite being told to write one id per marker with no space.
-const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g;
+// Exported so every consumer (verifier, UI rendering, redraft cleanup) parses
+// citation markers identically instead of re-deriving a slightly different regex.
+export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g;
+
+function splitCiteIds(idList: string): string[] {
+  return idList
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
 
 export function extractCites(bodyMd: string): string[] {
   const ids = new Set<string>();
   for (const m of bodyMd.matchAll(CITE_RE)) {
-    for (const id of m[1].split(",")) {
-      const trimmed = id.trim();
-      if (trimmed) ids.add(trimmed);
-    }
+    for (const id of splitCiteIds(m[1])) ids.add(id);
   }
   return [...ids];
+}
+
+/** Replaces every [cite:...] marker (single or comma-list) with `render(ids)`. */
+export function replaceCites(bodyMd: string, render: (ids: string[]) => string): string {
+  return bodyMd.replace(CITE_RE, (_match, idList: string) => render(splitCiteIds(idList)));
 }
 
 /**
