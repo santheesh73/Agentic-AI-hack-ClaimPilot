@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/db";
+import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
 import { getOwnedCase } from "@/lib/ownership";
 import { deadlinesForUi } from "@/lib/agent/deadlines";
 
@@ -46,6 +46,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!caseRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const db = supabaseAdmin();
+
+  const { data: documents } = await db.from("documents").select("storage_path").eq("case_id", id);
+  const storagePaths = (documents ?? []).map((d) => d.storage_path).filter((p): p is string => p != null);
+  if (storagePaths.length) {
+    // Best-effort: an orphaned storage object is a minor leak, not worth
+    // failing the delete over if Storage is briefly unavailable.
+    await db.storage.from(DOCUMENTS_BUCKET).remove(storagePaths);
+  }
+
   const { error } = await db.from("cases").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
