@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { scheduleFollowups, chooseRoute, isOmbudsmanEligibleByAmount, simNow } from "../lib/agent/deadlines";
+import { scheduleFollowups, chooseRoute, isOmbudsmanEligibleByAmount, simNow, deadlinesForUi } from "../lib/agent/deadlines";
+
+const SEEDED_RULE_IDS = new Set(["GRO_14D", "BIMA_BHAROSA", "OMB_ELIGIBLE", "OMB_1YEAR", "OMB_CAP"]);
 
 describe("chooseRoute", () => {
   it("always routes to the insurer GRO first", () => {
@@ -49,6 +51,41 @@ describe("scheduleFollowups", () => {
   it("does not flag ineligibility at or below the cap", () => {
     const fu = scheduleFollowups("2026-01-01", 5_000_000);
     expect(fu.some((f) => f.action === "OMBUDSMAN_INELIGIBLE_CAP")).toBe(false);
+  });
+
+  it("handles a year-end rollover (Dec 31 + 1 month -> Jan 31 next year)", () => {
+    const fu = scheduleFollowups("2026-12-31", 200000);
+    const elig = fu.find((f) => f.action === "OMBUDSMAN_ELIGIBLE");
+    expect(elig?.due_on).toBe("2027-01-31");
+  });
+
+  it("handles a leap day (Feb 29 + 1 month -> Mar 29, no clamping needed)", () => {
+    const fu = scheduleFollowups("2028-02-29", 200000);
+    const elig = fu.find((f) => f.action === "OMBUDSMAN_ELIGIBLE");
+    expect(elig?.due_on).toBe("2028-03-29");
+  });
+
+  it("every rule_id it produces exists in the regulations seed data (supabase/migrations/0001_init.sql)", () => {
+    const fu = scheduleFollowups("2026-01-01", 6_000_000); // over the cap, so all 4 rule_ids appear
+    for (const f of fu) {
+      expect(SEEDED_RULE_IDS.has(f.rule_id)).toBe(true);
+    }
+    expect(fu.length).toBeGreaterThan(0);
+  });
+});
+
+describe("deadlinesForUi", () => {
+  it("returns nothing before a complaint has been sent", () => {
+    expect(deadlinesForUi(null, 200000)).toEqual([]);
+  });
+
+  it("every deadline's rule_id exists in the regulations seed data", () => {
+    const deadlines = deadlinesForUi("2026-01-01", 6_000_000);
+    expect(deadlines.length).toBeGreaterThan(0);
+    for (const d of deadlines) {
+      expect(SEEDED_RULE_IDS.has(d.rule_id)).toBe(true);
+      expect(d.source_url).toMatch(/^https:\/\//);
+    }
   });
 });
 
