@@ -93,8 +93,54 @@ async function stepCount(caseId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Runs exactly one state transition for the case and persists the result. */
+const STEP_LOCK_LEASE_MS = 60_000;
+
+/** Atomically claims the step lock: succeeds only if no lease is held, or the
+ * previous lease has expired. Prevents a double-click or two open tabs from
+ * running the same state transition concurrently. */
+async function claimStepLock(caseId: string): Promise<boolean> {
+  const db = supabaseAdmin();
+  const now = new Date();
+  const leaseUntil = new Date(now.getTime() + STEP_LOCK_LEASE_MS).toISOString();
+  const { data, error } = await db
+    .from("cases")
+    .update({ step_lock_until: leaseUntil })
+    .eq("id", caseId)
+    .or(`step_lock_until.is.null,step_lock_until.lt.${now.toISOString()}`)
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+async function releaseStepLock(caseId: string): Promise<void> {
+  const db = supabaseAdmin();
+  await db.from("cases").update({ step_lock_until: null }).eq("id", caseId);
+}
+
+export class StepLockedError extends Error {
+  constructor(public state: CaseState) {
+    super("Another /step call is already in progress for this case.");
+  }
+}
+
+/** Runs exactly one state transition for the case and persists the result.
+ * Throws StepLockedError (callers should surface this as 409) if a step is
+ * already in progress for this case. */
 export async function runStep(caseId: string): Promise<{ state: CaseState; error?: string }> {
+  const claimed = await claimStepLock(caseId);
+  if (!claimed) {
+    const current = await getCase(caseId);
+    throw new StepLockedError(current.state);
+  }
+
+  try {
+    return await runStepLocked(caseId);
+  } finally {
+    await releaseStepLock(caseId);
+  }
+}
+
+async function runStepLocked(caseId: string): Promise<{ state: CaseState; error?: string }> {
   const c = await getCase(caseId);
 
   const alreadyDone = c.state === "DONT_APPEAL" && c.dont_appeal_reason != null;

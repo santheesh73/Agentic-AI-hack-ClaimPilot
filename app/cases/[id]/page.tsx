@@ -15,6 +15,7 @@ import { RubricPanel, type Check } from "@/components/RubricPanel";
 import { Ledger, type Evidence } from "@/components/Ledger";
 import { DraftView } from "@/components/DraftView";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/apiError";
 
 type Draft = {
   id: string;
@@ -117,7 +118,7 @@ export default function CasePage() {
         body: JSON.stringify({ answers }),
       });
       if (!res.ok) {
-        toast.error((await res.json().catch(() => null))?.error ?? "Failed to submit answers.");
+        toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to submit answers."));
         return;
       }
       await runLoop();
@@ -128,7 +129,7 @@ export default function CasePage() {
   const approve = useCallback(async () => {
     const res = await fetch(`/api/cases/${id}/approve`, { method: "POST" });
     if (!res.ok) {
-      toast.error((await res.json().catch(() => null))?.error ?? "Failed to approve the case.");
+      toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to approve the case."));
       return;
     }
     toast.success("Complaint approved and sent.");
@@ -143,7 +144,7 @@ export default function CasePage() {
         body: JSON.stringify({ days }),
       });
       if (!res.ok) {
-        toast.error((await res.json().catch(() => null))?.error ?? "Simulation failed.");
+        toast.error(extractErrorMessage(await res.json().catch(() => null), "Simulation failed."));
         return;
       }
       const { fired } = await res.json();
@@ -157,7 +158,7 @@ export default function CasePage() {
     if (!confirm("Delete this case permanently?")) return;
     const res = await fetch(`/api/cases/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error((await res.json().catch(() => null))?.error ?? "Failed to delete the case.");
+      toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to delete the case."));
       return;
     }
     router.push("/");
