@@ -9,5 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    coverage: {
+      provider: "v8",
+      include: ["lib/agent/**", "lib/ingest/**", "app/api/**"],
+    },
   },
 });
