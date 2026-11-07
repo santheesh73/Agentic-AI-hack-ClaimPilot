@@ -59,6 +59,10 @@ cp .env.example .env.local   # fill in GEMINI_API_KEY, NEXT_PUBLIC_SUPABASE_URL,
 
 Apply `supabase/migrations/0001_init.sql` to your Supabase project (via the SQL editor or the Supabase CLI), and create a private Storage bucket named `documents`.
 
+Which Gemini model names are actually callable depends on your API key's tier/project (model availability and deprecations shift over time -- `gemini-2.5-pro` and `gemini-2.5-flash` are already 404 for some keys as of this writing). If you see a "no longer available to new users" or quota error, check your key's available models and update `MODEL_FAST`/`MODEL_STRONG` in `.env.local`.
+
+Click **Load sample case A/B/C** on the landing page for a one-click walkthrough using `samples/policy.pdf` and the three synthetic rejection letters -- no file upload needed.
+
 ```bash
 pnpm dev      # run locally
 pnpm test     # vitest: verify.ts + deadlines.ts
@@ -92,6 +96,7 @@ See `docs/AI_DISCLOSURE.md` — including a disclosure that the sample policy do
 - `pnpm eval` itself (as opposed to the equivalent `scripts/prove-local.mjs` run above) has not been exercised, since this build environment cannot reach Supabase directly -- run it in an environment that can, to confirm the same results through the real DB-backed path.
 - The deployed Vercel URL has not been manually verified end-to-end in a browser (same network restriction).
 - No demo video yet.
+- Only the three sample cases have been exercised against a real model. A real insurer PDF and a handful of genuinely messy rejection letters (ambiguous dates, multiple cited clauses, non-English fragments) haven't been tried, and are the most likely place for the rubric prompt to need iteration.
 
 ## Demo video
 
