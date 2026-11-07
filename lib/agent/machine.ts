@@ -11,7 +11,7 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote, extractCites } from "./verify";
+import { matchQuote, stripSentencesCiting } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
@@ -415,13 +415,6 @@ async function runDraft(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "VERIFY" };
 }
 
-function stripFailedSentences(bodyMd: string, failedIds: string[]): string {
-  if (!failedIds.length) return bodyMd;
-  const failedSet = new Set(failedIds);
-  const sentences = bodyMd.split(/(?<=[.!?])\s+/);
-  return sentences.filter((s) => !extractCites(s).some((id) => failedSet.has(id))).join(" ");
-}
-
 async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const { data: draft } = await db
@@ -466,7 +459,7 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     return { state: "DRAFT" };
   }
 
-  const cleaned = stripFailedSentences(draft!.body_md, failedIds);
+  const cleaned = stripSentencesCiting(draft!.body_md, failedIds);
   const cleanedResults = results.map((r) => (failedIds.includes(r.short_id) ? { ...r, ok: true, score: r.score } : r));
   await db
     .from("drafts")
