@@ -140,6 +140,14 @@ This is the real, unflattering baseline Phase 3 needs to close to reach the ≥8
 | CI workflows | ❌ not done |
 | `docs/KNOWN_ISSUES.md`, `evals/README.md`, `docs/RESUME.md` | ❌ not done |
 
+## 7a. Phase 2 updates (post-initial-audit)
+
+Since this document was first written, Phase 2 added: `lib/env.ts` (Zod-validated boot config, 7 tests), `GET /api/health`, `LLM_PROVIDER=anthropic|google` dual-provider support (found and fixed a real `@ai-sdk/anthropic`/`@ai-sdk/google` dependency conflict along the way), `lib/validation.ts` (Zod schemas + a consistent `{error:{code,message}}` contract on all 8 routes, replacing the ad-hoc string-error responses this document originally flagged), PDF magic-byte sniffing + 413/415/422 status codes on upload, and a lease-based idempotent `/step` (`cases.step_lock_until`, migration `0003`) returning 409 on a concurrent call instead of silently double-running a state transition.
+
+**Verified:** after a fresh `rm -rf .next && pnpm build`, grepped `.next/static` for both the Supabase service-role key and the Gemini API key (by their actual values' prefixes, read from `.env.local`) — neither appears. Confirms `server-only`/the service-role key genuinely never reach the client bundle.
+
+Test count is now 62 (up from 32), still all pure/unit-level — `lib/agent/machine.ts`, the tool files, and the route handlers remain at 0% coverage pending the mocked-LLM integration suite and route-handler tests (see `docs/KNOWN_ISSUES.md`).
+
 ## 8. Next
 
 See the task list for the remaining phases (2–6). Phase 2 (dual-provider abstraction) starts immediately after this document.
