@@ -53,8 +53,11 @@ export function AskUserDialog({
             disabled={submitting || missingFacts.some((mf) => !values[mf.key]?.trim())}
             onClick={async () => {
               setSubmitting(true);
-              await onSubmit(values);
-              setSubmitting(false);
+              try {
+                await onSubmit(values);
+              } finally {
+                setSubmitting(false);
+              }
             }}
           >
             {submitting ? "Submitting…" : "Continue"}
