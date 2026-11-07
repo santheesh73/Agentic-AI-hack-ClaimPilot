@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 export default function Home() {
   const router = useRouter();
@@ -17,7 +18,27 @@ export default function Home() {
   const [rejectionFile, setRejectionFile] = useState<File | null>(null);
   const [rejectionText, setRejectionText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [loadingSample, setLoadingSample] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  async function loadSample(sample: "a" | "b" | "c") {
+    setErr(null);
+    setLoadingSample(sample);
+    try {
+      const res = await fetch("/api/cases/sample", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sample }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load sample case");
+      router.push(`/cases/${data.id}`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      toast.error(message);
+      setLoadingSample(null);
+    }
+  }
 
   async function createCase() {
     setErr(null);
@@ -67,6 +88,19 @@ export default function Home() {
             <span>✓ Every claim cited</span>
             <span>✓ Citations verified in code</span>
             <span>✓ Real escalation deadlines</span>
+          </div>
+          <div className="flex justify-center gap-2 pt-1">
+            {(["a", "b", "c"] as const).map((sample) => (
+              <Button
+                key={sample}
+                variant="outline"
+                size="sm"
+                onClick={() => loadSample(sample)}
+                disabled={loadingSample !== null}
+              >
+                {loadingSample === sample ? "Loading…" : `Load sample case ${sample.toUpperCase()}`}
+              </Button>
+            ))}
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { AskUserDialog } from "@/components/AskUserDialog";
 import { Deadlines, type DeadlineItem } from "@/components/Deadlines";
 import { RedTeamCard, type RedTeamData } from "@/components/RedTeamCard";
+import { toast } from "sonner";
 
 type AgentEvent = { id: number; step: string; tool: string | null; model: string | null; summary: string | null; ms: number | null };
 type Check = { id: string; answer: "yes" | "no" | "unknown"; rationale: string; evidence_refs: string[] };
@@ -50,6 +51,7 @@ export default function CasePage() {
   const searchParams = useSearchParams();
   const isReplay = searchParams.get("replay") === "1";
   const [data, setData] = useState<CaseData | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [running, setRunning] = useState(false);
   const [versionIdx, setVersionIdx] = useState<number | null>(null);
   const [revealCount, setRevealCount] = useState(0);
@@ -58,13 +60,24 @@ export default function CasePage() {
   const fetchCase = useCallback(async () => {
     const res = await fetch(`/api/cases/${id}`);
     const json = await res.json();
-    setData(json);
+    if (res.ok) setData(json);
+    else setNotFound(true);
     return json as CaseData;
   }, [id]);
 
   useEffect(() => {
-    fetchCase();
-  }, [fetchCase]);
+    let ignore = false;
+    (async () => {
+      const res = await fetch(`/api/cases/${id}`);
+      const json = await res.json();
+      if (ignore) return;
+      if (res.ok) setData(json);
+      else setNotFound(true);
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [id]);
 
   useEffect(() => {
     if (!isReplay || !data) return;
@@ -91,28 +104,43 @@ export default function CasePage() {
 
   const answerQuestions = useCallback(
     async (answers: Record<string, string>) => {
-      await fetch(`/api/cases/${id}/answer`, {
+      const res = await fetch(`/api/cases/${id}/answer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
       });
+      if (!res.ok) {
+        toast.error((await res.json().catch(() => null))?.error ?? "Failed to submit answers.");
+        return;
+      }
       await runLoop();
     },
     [id, runLoop]
   );
 
   const approve = useCallback(async () => {
-    await fetch(`/api/cases/${id}/approve`, { method: "POST" });
+    const res = await fetch(`/api/cases/${id}/approve`, { method: "POST" });
+    if (!res.ok) {
+      toast.error((await res.json().catch(() => null))?.error ?? "Failed to approve the case.");
+      return;
+    }
+    toast.success("Complaint approved and sent.");
     await fetchCase();
   }, [id, fetchCase]);
 
   const simulate = useCallback(
     async (days: number) => {
-      await fetch(`/api/cases/${id}/simulate`, {
+      const res = await fetch(`/api/cases/${id}/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ days }),
       });
+      if (!res.ok) {
+        toast.error((await res.json().catch(() => null))?.error ?? "Simulation failed.");
+        return;
+      }
+      const { fired } = await res.json();
+      toast.success(fired > 0 ? `Simulated +${days} days: ${fired} follow-up(s) fired.` : `Simulated +${days} days: no follow-ups due yet.`);
       await fetchCase();
     },
     [id, fetchCase]
@@ -120,7 +148,11 @@ export default function CasePage() {
 
   const deleteCase = useCallback(async () => {
     if (!confirm("Delete this case permanently?")) return;
-    await fetch(`/api/cases/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/cases/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      toast.error((await res.json().catch(() => null))?.error ?? "Failed to delete the case.");
+      return;
+    }
     router.push("/");
   }, [id, router]);
 
@@ -130,6 +162,20 @@ export default function CasePage() {
     if (versionIdx === null) return latestDraft;
     return data.drafts[versionIdx];
   }, [data, versionIdx, latestDraft]);
+
+  if (notFound) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center gap-4 p-8 text-center">
+        <p className="text-lg font-medium">Case not found</p>
+        <p className="text-muted-foreground text-sm">
+          It may have been deleted, or belongs to a different browser session.
+        </p>
+        <Button asChild>
+          <Link href="/">Start a new case</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (!data) return <div className="p-8 text-muted-foreground">Loading…</div>;
 

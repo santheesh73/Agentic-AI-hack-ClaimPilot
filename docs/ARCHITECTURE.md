@@ -50,17 +50,17 @@ If verification fails, the agent redrafts (up to 2 times), then as a last resort
 
 | Tool | Does | Model |
 | --- | --- | --- |
-| `parse_documents` | PDF → per-page text | none |
 | `extract_rejection` | Rejection letter → structured facts | fast |
 | `write_queries` (part of RETRIEVE) | Facts → 3–6 search queries | fast |
 | `search_policy` | Query → ranked policy pages | none (Postgres FTS) |
-| `lookup_regulation` | Rule ids → regulation rows | none |
 | `assess_case` | Facts + candidate pages → six-check rubric + evidence ledger | strong |
 | `choose_route` | Facts → escalation step + reason | code + fast |
 | `draft_appeal` | Facts + verified evidence + route → letter | strong |
 | `verify_citations` | Draft + evidence → per-citation pass/fail | none (code) |
 | `redteam_review` | Draft + policy pages → insurer's best counter-argument | strong |
 | `schedule_followup` | Route + sent date → follow-up rows | none |
+
+PDF parsing (`lib/ingest/pdf.ts`'s `parsePdf`/`isLikelyImageOnly`) is called directly from the document-upload API routes rather than through a separate agent tool, since it has no model involvement and no case-state dependency. Regulation text is a small, fixed set baked into `lib/agent/deadlines.ts` as pure, unit-tested functions rather than queried from the `regulations` table at runtime -- that table exists for reference/display and to make the source-of-truth auditable in the database, but `deadlines.ts` intentionally stays DB-free so its date arithmetic can be unit-tested without a database (see `tests/deadlines.test.ts`).
 
 ## Model provider
 

@@ -60,7 +60,7 @@ export async function generate<T extends z.ZodTypeAny>(
         tool,
         model,
         summary: undefined,
-        input: { system, prompt: typeof prompt === "string" ? prompt : "[concatenated parts]" },
+        input: { prompt_version: PROMPT_VERSION, system, prompt: typeof prompt === "string" ? prompt : "[concatenated parts]" },
         output: result.object,
         tokens_in: result.usage?.inputTokens,
         tokens_out: result.usage?.outputTokens,
@@ -76,7 +76,7 @@ export async function generate<T extends z.ZodTypeAny>(
         tool,
         model,
         summary: `Model call failed (attempt ${attempt + 1}): ${(err as Error).message}`,
-        input: { system },
+        input: { prompt_version: PROMPT_VERSION, system },
         output: null,
         ms: Date.now() - start,
       });

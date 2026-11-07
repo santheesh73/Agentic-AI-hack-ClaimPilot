@@ -12,6 +12,7 @@ import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
 import { matchQuote } from "./verify";
+import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
 
@@ -538,16 +539,19 @@ export async function recordAnswers(caseId: string, answers: Record<string, stri
 /** POST /approve handler support. */
 export async function approveCase(caseId: string) {
   const c = await getCase(caseId);
-  const { simNow } = await import("./deadlines");
   const sentOn = simNow(c.sim_offset_days);
   await updateCase(caseId, { state: "APPROVED", complaint_sent_on: sentOn });
   const db = supabaseAdmin();
-  await db
+  const { data: latestDraft } = await db
     .from("drafts")
-    .update({ approved_at: new Date().toISOString() })
+    .select("id")
     .eq("case_id", caseId)
     .order("version", { ascending: false })
-    .limit(1);
+    .limit(1)
+    .maybeSingle();
+  if (latestDraft) {
+    await db.from("drafts").update({ approved_at: new Date().toISOString() }).eq("id", latestDraft.id);
+  }
   await scheduleFollowupTool(caseId, sentOn, c.claim_amount_inr);
   await logEvent({ caseId, step: "APPROVED", summary: `Complaint approved and sent on ${sentOn}.` });
 }

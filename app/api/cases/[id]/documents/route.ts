@@ -33,8 +33,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   let filename: string | null = null;
 
   if (file) {
+    if (file.type && file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      return NextResponse.json({ error: "Only PDF files are supported." }, { status: 400 });
+    }
+
     const buffer = await file.arrayBuffer();
-    pages = await parsePdf(buffer);
+    try {
+      pages = await parsePdf(buffer);
+    } catch {
+      return NextResponse.json(
+        { error: "Could not read this PDF. It may be corrupted or password-protected." },
+        { status: 400 }
+      );
+    }
+    if (pages.length === 0) {
+      return NextResponse.json({ error: "This PDF has no pages." }, { status: 400 });
+    }
     if (isLikelyImageOnly(pages)) {
       return NextResponse.json(
         { error: "This PDF appears to be image-only (scanned) with no extractable text. ClaimPilot cannot process scanned PDFs." },
