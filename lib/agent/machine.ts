@@ -351,7 +351,7 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
   const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
-  const needsUser = (c5?.answer === "unknown" || c5?.answer === "no") && unresolvedMissing.length > 0;
+  const needsUser = needsUserInput(c5?.answer, unresolvedMissing.length > 0);
 
   const nextState: CaseState = needsUser ? "AWAITING_USER" : "DECIDE";
 
@@ -371,6 +371,14 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   });
 
   return { state: nextState };
+}
+
+/** Whether the case should pause for AWAITING_USER rather than proceed to
+ * DECIDE: the model couldn't confirm the facts it needs (C5 "unknown" or
+ * "no" -- both mean "not known"), and there's at least one unanswered
+ * missing-fact question. */
+export function needsUserInput(c5Answer: Check["answer"] | undefined, hasUnresolvedMissingFacts: boolean): boolean {
+  return (c5Answer === "unknown" || c5Answer === "no") && hasUnresolvedMissingFacts;
 }
 
 export function decideVerdict(rubric: Check[]): Verdict {
