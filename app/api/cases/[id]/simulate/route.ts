@@ -5,6 +5,7 @@ import { simNow } from "@/lib/agent/deadlines";
 import { logEvent, generate, MODEL_STRONG } from "@/lib/models";
 import { DraftOutput } from "@/lib/agent/schemas";
 import { verifyCitationsTool } from "@/lib/agent/tools/verifyCitationsTool";
+import { stripSentencesCiting } from "@/lib/agent/verify";
 
 export const maxDuration = 60;
 
@@ -57,14 +58,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
 
       const results = verifyCitationsTool(draft.body_md, evidenceById, pagesById);
-      const failed = results.filter((r) => !r.ok).map((r) => r.short_id);
-      const failedPattern = failed.length ? new RegExp(`\\[cite:(${failed.join("|")})\\]`) : null;
-      outputMd = failedPattern
-        ? draft.body_md
-            .split(/(?<=[.!?])\s+/)
-            .filter((s) => !failedPattern.test(s))
-            .join(" ")
-        : draft.body_md;
+      const failedIds = results.filter((r) => !r.ok).map((r) => r.short_id);
+      outputMd = stripSentencesCiting(draft.body_md, failedIds);
     }
 
     await db.from("followups").update({ status: "fired", output_md: outputMd }).eq("id", fu.id);
