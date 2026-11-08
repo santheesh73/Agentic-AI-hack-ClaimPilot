@@ -287,6 +287,16 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     expect(ev[0]).toMatchObject({ verified: true, page_id: "page-policy-1" });
   });
 
+  it("ends in ERROR, not AWAITING_APPROVAL, when nothing verifiable survives stripping", async () => {
+    const { runStep } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    draftBody = "The policy covers 100% of this claim with no waiting period. [cite:E7]";
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+    expect(state).toBe("ERROR");
+    expect(fakeDb.cases[0].error).toMatch(/could all be verified/);
+  });
+
   it("surfaces a model schema failure as ERROR after exhausting retries", async () => {
     vi.doMock("../lib/models", async (importOriginal) => {
       const actual = await importOriginal<typeof import("../lib/models")>();
