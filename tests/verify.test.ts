@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalize, matchQuote, verifyDraft, stripSentencesCiting, replaceCites } from "../lib/agent/verify";
+import { normalize, matchQuote, verifyDraft, stripSentencesCiting, replaceCites, extractCites, findUnverifiableSentences, stripUnverified, splitSentences } from "../lib/agent/verify";
 
 describe("normalize", () => {
   it("expands ligatures", () => {
@@ -120,5 +120,80 @@ describe("replaceCites", () => {
   it("passes the split id list to the renderer for a comma marker", () => {
     const rendered = replaceCites("Claim. [cite: E1, E2]", (ids) => `(${ids.join("+")})`);
     expect(rendered).toBe("Claim. (E1+E2)");
+  });
+});
+
+// --- Regression tests for audit findings F-001, F-002, F-004 ---
+
+describe("matchQuote rejects meaning changes (F-001)", () => {
+  const page = normalize(
+    "Expenses related to the treatment of a pre-existing disease and its direct complications shall be excluded " +
+      "until the expiry of 48 months of continuous coverage after the date of inception of the first policy with the insurer."
+  );
+  const original = "a pre-existing disease and its direct complications shall be excluded until the expiry of 48 months of continuous coverage";
+  it("accepts the verbatim clause", () => expect(matchQuote(original, page).ok).toBe(true));
+  it("rejects an inserted negation", () => expect(matchQuote(original.replace("shall be", "shall not be"), page).ok).toBe(false));
+  it("rejects a changed number", () => expect(matchQuote(original.replace("48", "24"), page).ok).toBe(false));
+  it("rejects excluded -> included", () => expect(matchQuote(original.replace("excluded", "included"), page).ok).toBe(false));
+  it("still accepts a harmless typo", () => expect(matchQuote(original.replace("complications", "complicatons"), page).ok).toBe(true));
+  it("threshold boundary: a quote just below 0.92 similarity fails", () => {
+    const { ok, score } = matchQuote("a pre-existing condition and its indirect consequences shall be excluded until the end of 48 months of cover", page);
+    expect(score).toBeLessThan(0.92);
+    expect(ok).toBe(false);
+  });
+  it("short quotes (< 6 words) need an exact match even for a one-letter typo", () => {
+    expect(matchQuote("shall be excluded until", page).ok).toBe(true);
+    expect(matchQuote("shall be exclded until", page).ok).toBe(false);
+  });
+  it("empty quote fails", () => expect(matchQuote("   ", page)).toEqual({ ok: false, score: 0 }));
+});
+
+describe("citation parsing (F-002)", () => {
+  it.each([
+    ["[cite:E1]", ["E1"]], ["[CITE:e1]", ["E1"]], ["[cite: E1, E2]", ["E1", "E2"]], ["[cite:E1; E2]", ["E1", "E2"]],
+    ["[cite:E1 E2]", ["E1", "E2"]], ["[cite:E1-E3]", ["E1", "E2", "E3"]], ["(cite:E1)", ["E1"]], ["[[cite:E1]]", ["E1"]],
+    ["[cite:E1][cite:E2]", ["E1", "E2"]], ["[cite:E99]", ["E99"]],
+  ])("%s parses to %j", (marker, ids) => expect(extractCites(`Covered. ${marker}`)).toEqual(ids));
+
+  const pagesById = { p1: { id: "p1", text_norm: normalize("waiting period of 36 months") } };
+  const evidenceById = { E1: { short_id: "E1", quote: "waiting period of 36 months", page_id: "p1", verified: true } };
+
+  it("an uncited policy claim fails verification", () => {
+    const r = verifyDraft("The waiting period expired. [cite:E1] Clause 9.4 of the policy guarantees reimbursement within 7 days.", evidenceById, pagesById);
+    expect(r.find((x) => x.short_id === "UNCITED")?.ok).toBe(false);
+  });
+  it("an unrecognized marker format fails verification instead of passing vacuously", () => {
+    const r = verifyDraft("The policy covers this in full [E1](cite).", evidenceById, pagesById);
+    expect(r.some((x) => !x.ok)).toBe(true);
+  });
+  it("restating the insurer's rejection is not flagged as an uncited policy claim", () => {
+    expect(findUnverifiableSentences("Your letter rejected my claim under Section 6 of the policy.")).toEqual([]);
+  });
+  it("facts and requests without policy terms are not flagged", () => {
+    expect(findUnverifiableSentences("I was admitted on 2 August 2026. Please settle the claim of Rs. 92,500.")).toEqual([]);
+  });
+  it("headings are not checked", () => expect(findUnverifiableSentences("# Appeal under Clause 4.1")).toEqual([]));
+});
+
+describe("stripping keeps the right sentences and the structure (F-004)", () => {
+  it("a marker after the full stop belongs to the sentence before it", () => {
+    const body = "The waiting period has expired. [cite:E9] Please reconsider the claim. We attach the discharge summary.";
+    expect(stripSentencesCiting(body, ["E9"])).toBe("Please reconsider the claim. We attach the discharge summary.");
+  });
+  it("keeps paragraphs and list items", () => {
+    const body = "Para one sentence. [cite:E1]\n\nPara two has a bad cite [cite:E9]. It also says more.\n\n- bullet item one\n- bullet item two";
+    expect(stripSentencesCiting(body, ["E9"])).toBe("Para one sentence. [cite:E1]\n\nIt also says more.\n\n- bullet item one\n- bullet item two");
+  });
+  it("does not split on abbreviations or decimals", () => {
+    expect(splitSentences("Per Sec. 6.3 of the policy the claim is valid [cite:E9]. Thank you.")).toEqual([
+      "Per Sec. 6.3 of the policy the claim is valid [cite:E9].",
+      "Thank you.",
+    ]);
+    expect(stripSentencesCiting("Per Sec. 6.3 of the policy the claim is valid [cite:E9]. Thank you.", ["E9"])).toBe("Thank you.");
+  });
+  it("stripUnverified removes failed and uncited policy claims but keeps the relief request", () => {
+    const body = "# Appeal\n\nThe waiting period has expired. [cite:E1] The policy waives all exclusions for senior citizens. [cite:E9] Please settle the claim of Rs 1,00,000.\n\nClause 9.4 guarantees payment in 7 days.";
+    const out = stripUnverified(body, [{ short_id: "E1", ok: true, score: 1 }, { short_id: "E9", ok: false, score: 0 }]);
+    expect(out).toBe("# Appeal\n\nThe waiting period has expired. [cite:E1] Please settle the claim of Rs 1,00,000.");
   });
 });

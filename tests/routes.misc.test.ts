@@ -69,6 +69,27 @@ describe("POST /api/cases/[id]/answer", () => {
     expect(res.status).toBe(400);
   });
 
+  // Audit F-006: answers must never revive a terminal case or skip ahead.
+  it.each(["APPROVED", "DONT_APPEAL", "ERROR", "INTAKE", "AWAITING_APPROVAL"])(
+    "returns 409 and leaves a %s case untouched",
+    async (state) => {
+      fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state, answers: {} }];
+      const { POST } = await import("../app/api/cases/[id]/answer/route");
+      const res = await POST(jsonRequest({ answers: { a: "b" } }) as never, { params: Promise.resolve({ id: "case-1" }) });
+      expect(res.status).toBe(409);
+      expect((await res.json()).error.code).toBe("invalid_state");
+      expect(fakeDb.cases[0].state).toBe(state);
+      expect(fakeDb.cases[0].answers).toEqual({});
+    }
+  );
+
+  it("recordAnswers itself refuses a case that is not AWAITING_USER", async () => {
+    fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state: "APPROVED", answers: {} }];
+    const { recordAnswers, InvalidStateError } = await import("../lib/agent/machine");
+    await expect(recordAnswers("case-1", { a: "b" })).rejects.toBeInstanceOf(InvalidStateError);
+    expect(fakeDb.cases[0].state).toBe("APPROVED");
+  });
+
   it("returns 404 for a nonexistent case", async () => {
     fakeDb.cases = [];
     const { POST } = await import("../app/api/cases/[id]/answer/route");

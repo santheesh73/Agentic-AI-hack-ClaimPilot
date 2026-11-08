@@ -5,7 +5,9 @@ import { simNow } from "@/lib/agent/deadlines";
 import { logEvent, generate, MODEL_STRONG } from "@/lib/models";
 import { DraftOutput } from "@/lib/agent/schemas";
 import { verifyCitationsTool } from "@/lib/agent/tools/verifyCitationsTool";
-import { stripSentencesCiting } from "@/lib/agent/verify";
+import { stripUnverified } from "@/lib/agent/verify";
+import { UNTRUSTED_DOC_PREAMBLE } from "@/lib/agent/prompts";
+import { enforceRequestLimits } from "@/lib/rateLimit";
 import { SimulateBody, parseJsonBody, errorResponse, notFoundResponse } from "@/lib/validation";
 
 export const maxDuration = 60;
@@ -22,6 +24,7 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
   const { id } = await params;
   const caseRow = await getOwnedCase(id);
   if (!caseRow) return notFoundResponse();
+  await enforceRequestLimits(req, caseRow.owner_id, "simulate");
 
   const { days } = await parseJsonBody(req, SimulateBody);
 
@@ -59,13 +62,15 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
         model: MODEL_STRONG,
         schema: DraftOutput,
         system:
-          "Write a short escalation complaint to the IRDAI Bima Bharosa Grievance Redressal Cell, noting the insurer's Grievance Redressal Officer did not resolve the complaint within 14 days. Every sentence relying on the policy must end with [cite:E#] citing only the given ids. Do not invent facts.",
+          UNTRUSTED_DOC_PREAMBLE +
+          " Write a short escalation complaint to the IRDAI Bima Bharosa Grievance Redressal Cell, noting the insurer's Grievance Redressal Officer did not resolve the complaint within 14 days. Every sentence relying on the policy must end with [cite:E#] citing only the given ids. Do not invent facts.",
         prompt: `Facts: ${JSON.stringify(caseRow.facts)}\n\nEvidence:\n${evidenceList}`,
       });
 
+      // Same verification as the appeal letter: drop sentences citing a
+      // failed id and any uncited or unparsed policy claim.
       const results = verifyCitationsTool(draft.body_md, evidenceById, pagesById);
-      const failedIds = results.filter((r) => !r.ok).map((r) => r.short_id);
-      outputMd = stripSentencesCiting(draft.body_md, failedIds);
+      outputMd = stripUnverified(draft.body_md, results);
     }
 
     await db.from("followups").update({ status: "fired", output_md: outputMd }).eq("id", fu.id);

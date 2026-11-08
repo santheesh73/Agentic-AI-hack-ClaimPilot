@@ -16,7 +16,7 @@ Tracked honestly per the hardening effort's ground rule: never claim something i
 - `decideVerdict` is tested against all 81 combinations of C1-C4 (the only checks it branches on) and `needsUserInput` against all 6 combinations of C5 × missing-facts-presence (`tests/decision.test.ts`), against an independently-written reference — not a literal 3⁶=729 loop, since C5/C6 don't participate in `decideVerdict` and C1-C4 don't participate in the ask-gate; see that file's comments for the reasoning.
 - Property-based tests (`fast-check`) for `matchQuote` run against the real `samples/policy.pdf`, not canned fixtures (`tests/verify.property.test.ts`).
 
-Coverage (`npx vitest run --coverage`, scoped to `lib/agent/**`, `lib/ingest/**`, `app/api/**`): **85.03% statements / 89.29% lines** (220 tests; was 82.07%/86.64% at 187 tests), up from 15.14%/15.48% at the start of Phase 3 — both statement and line coverage now meet the 85% target. Branch coverage (63.11%) is the laggard; most of the gap is defensive `?? []`/`?.` fallbacks and the retry/backoff branches in `lib/models.ts` that are hard to hit without either a live flaky API or more elaborate fault-injection in the fake client.
+Coverage (`npx vitest run --coverage`, scoped to `lib/agent/**`, `lib/ingest/**`, `app/api/**`): **86.57% statements / 90.22% lines** (285 tests; was 85.03%/89.29% at 220 tests, 82.07%/86.64% at 187), up from 15.14%/15.48% at the start of Phase 3 — both statement and line coverage now meet the 85% target. Branch coverage (67.31%) is the laggard; most of the gap is defensive `?? []`/`?.` fallbacks and the retry/backoff branches in `lib/models.ts` that are hard to hit without either a live flaky API or more elaborate fault-injection in the fake client.
 
 A genuine, previously-undiscovered production bug was caught by this work: `lib/ingest/pdf.ts`'s `parsePdf()` crashed on a real Node `Buffer` (not just in tests — this hit `app/api/cases/sample/route.ts` and would have hit `pnpm eval` too), because `Buffer instanceof Uint8Array` is `true` even though `unpdf` explicitly rejects a real `Buffer`. Fixed; see git log.
 
@@ -53,3 +53,20 @@ Deployment-readiness checklist, each verified by an actual command, not assumed:
 ## Real bugs found and fixed this session (for context, not "remaining")
 
 See `git log` on `hardening` for full detail: the `.update().order().limit()` PostgREST no-op bug in `approveCase`, the printable letter and simulate-route citation-stripping regexes that had drifted from the centralized fixed version, the stuck-forever `AskUserDialog` on a thrown `onSubmit`, missing Vercel file-tracing for `samples/`, a real `@ai-sdk/anthropic`/`@ai-sdk/google` dependency type conflict, the previously-unvalidated/inconsistent API error contract across all 8 routes, the lack of any step-level concurrency guard, and (Phase 3) `parsePdf()` crashing on a real Node `Buffer`.
+
+## Independent audit (audit/AUDIT_REPORT.md on branch `claude/trusting-feynman-m7ekcj`)
+
+**Fixed (all Critical and High findings), each with regression tests:**
+- F-001 quote verifier accepted meaning-inverted quotes → numbers and polarity words must now match exactly.
+- F-002 uncited/unparsed policy claims passed verification → fail-closed parser plus an uncited-policy-claim check (a keyword heuristic, documented as such in the README); simulate escalation drafts use the same check.
+- F-003 Ombudsman last date ignored the insurer's reply → labelled as the no-reply deadline; `ombudsmanLastDate()` handles a known reply date.
+- F-004 stripping kept the failed claim and deleted the next sentence → markers attach to the preceding sentence; structure preserved.
+- F-005 ask-user gate ignored the verdict → asks only when the answer can change the outcome.
+- F-006 `/answer` revived terminal cases → 409 unless AWAITING_USER, atomic transition.
+- F-007 cookie-only rate limits → per-IP limits, limits on uploads/answers/simulate, global daily LLM budget, default per-case token cap.
+- F-008 contradictory Ombudsman labels above ₹50 lakh → only "not available" is shown.
+- F-009 README claims corrected.
+
+**Still open (Medium/Low):** see the report's batches B and C — notably layered SDK retries (F-010), lease expiry (F-011), approve/simulate races (F-012), injection scanning of policy pages (F-013), security headers (F-014), IST dates (F-015), verifier performance on long pages (F-016), Indic-script PDFs (F-017), accessibility and mobile layout (F-022, F-023).
+
+**Not re-measured:** the eval results in the README predate these fixes; re-run `pnpm eval` ×3.

@@ -12,6 +12,7 @@ import {
   errorResponse,
   notFoundResponse,
 } from "@/lib/validation";
+import { enforceRequestLimits } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const caseRow = await getOwnedCase(id);
     if (!caseRow) return notFoundResponse();
+    await enforceRequestLimits(req, caseRow.owner_id, "upload");
 
     const form = await req.formData();
     const kindResult = DocumentKind.safeParse(form.get("kind"));

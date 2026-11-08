@@ -1,6 +1,8 @@
 import "server-only";
 import { z } from "zod";
 
+const emptyToUndefined = (v: unknown) => (v === "" ? undefined : v);
+
 const envSchema = z
   .object({
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -10,7 +12,9 @@ const envSchema = z
     ANTHROPIC_API_KEY: z.string().optional(),
     MODEL_FAST: z.string().optional(),
     MODEL_STRONG: z.string().optional(),
-    MAX_TOKENS_PER_CASE: z.coerce.number().int().positive().optional(),
+    // An empty value (e.g. copied straight from .env.example) means "unset".
+    MAX_TOKENS_PER_CASE: z.preprocess(emptyToUndefined, z.coerce.number().int().nonnegative().optional()),
+    GLOBAL_DAILY_LLM_CALLS: z.preprocess(emptyToUndefined, z.coerce.number().int().positive().optional()),
   })
   .superRefine((val, ctx) => {
     if (val.LLM_PROVIDER === "google" && !val.GEMINI_API_KEY) {
