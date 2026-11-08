@@ -1,0 +1,128 @@
+{
+  "ranAt": "2026-11-08T08:27:01.738Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "ERROR",
+      "verifiedPct": 0,
+      "steps": 7,
+      "ms": 21142,
+      "tokens": 4664
+    },
+    {
+      "case": "case_b_non_disclosure_missing_diagnosis_date",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 63265,
+      "tokens": 9841
+    },
+    {
+      "case": "case_c_cosmetic_surgery_explicit_exclusion",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 50828,
+      "tokens": 5337
+    },
+    {
+      "case": "case_d_30day_wait_but_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 62655,
+      "tokens": 11081
+    },
+    {
+      "case": "case_e_30day_wait_illness_genuine",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 15060,
+      "tokens": 4112
+    },
+    {
+      "case": "case_f_hernia_within_24_months",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 15753,
+      "tokens": 4203
+    },
+    {
+      "case": "case_g_cataract_waiting_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 33654,
+      "tokens": 10170
+    },
+    {
+      "case": "case_h_ped_portability_credit",
+      "expected": "STRONG",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 15552,
+      "tokens": 4160
+    },
+    {
+      "case": "case_i_ped_waiting_not_completed",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 20801,
+      "tokens": 7415
+    },
+    {
+      "case": "case_j_adventure_sport_amateur",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 36952,
+      "tokens": 7357
+    },
+    {
+      "case": "case_k_reconstruction_after_burns",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 32818,
+      "tokens": 7734
+    },
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 28806,
+      "tokens": 7269
+    }
+  ]
+}
