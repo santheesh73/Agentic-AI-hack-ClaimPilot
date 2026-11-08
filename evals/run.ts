@@ -55,6 +55,13 @@ async function createCaseHeadless(evalCase: EvalCase) {
   return caseId;
 }
 
+export function infraErrorOf(message: string | null | undefined): string | undefined {
+  if (!message) return undefined;
+  if (/exceeded your current quota|RESOURCE_EXHAUSTED|rate.?limit|\b429\b/i.test(message)) return "quota";
+  if (/\b(500|502|503|504)\b|overloaded|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT/i.test(message)) return "provider_unavailable";
+  return undefined;
+}
+
 async function runCase(evalCase: EvalCase) {
   const start = Date.now();
   const caseId = await createCaseHeadless(evalCase);
@@ -86,7 +93,7 @@ async function runCase(evalCase: EvalCase) {
     }
   }
 
-  const { data: finalCase } = await db.from("cases").select("verdict, state").eq("id", caseId).single();
+  const { data: finalCase } = await db.from("cases").select("verdict, state, error").eq("id", caseId).single();
   // Score the final draft only; earlier versions were redrafted precisely
   // because their citations failed.
   const { data: drafts } = await db
@@ -112,6 +119,9 @@ async function runCase(evalCase: EvalCase) {
     // The verdict can be right while the case still ends in ERROR (e.g. no
     // quote verified, so no letter); recorded so that isn't counted as success.
     finalState: finalCase?.state ?? "UNKNOWN",
+    // Quota / rate-limit / provider outages say nothing about ClaimPilot's
+    // judgment; recorded separately so they're excluded from accuracy.
+    infraError: infraErrorOf(finalCase?.error),
     verifiedPct,
     steps,
     ms: Date.now() - start,
@@ -128,7 +138,7 @@ async function main() {
     try {
       results.push(await runCase(evalCase));
     } catch (err) {
-      results.push({ case: evalCase.name, expected: evalCase.expected, got: `ERROR: ${(err as Error).message}`, finalState: "ERROR", verifiedPct: 0, steps: 0, ms: 0, tokens: 0 });
+      results.push({ case: evalCase.name, expected: evalCase.expected, got: `ERROR: ${(err as Error).message}`, finalState: "ERROR", infraError: infraErrorOf((err as Error).message), verifiedPct: 0, steps: 0, ms: 0, tokens: 0 });
     }
   }
 
@@ -151,7 +161,9 @@ async function main() {
   console.log(`\nWrote ${outPath}`);
 }
 
-main().then(() => process.exit(0)).catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1]?.endsWith("run.ts")) {
+  main().then(() => process.exit(0)).catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

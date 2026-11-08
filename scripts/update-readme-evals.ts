@@ -16,6 +16,8 @@ export type EvalResult = {
   got: string;
   /** Absent in result files written before it was recorded. */
   finalState?: string;
+  /** Set when the case failed for infrastructure reasons (quota, outage). */
+  infraError?: string;
   verifiedPct: number;
   steps: number;
   ms: number;
@@ -49,14 +51,19 @@ export function summarize(runs: EvalRun[], sourceFiles: string[] = []): string {
 
   const byCase = new Map<string, EvalResult[]>();
   for (const run of runs) {
-    for (const r of run.results) {
+    for (const r of run.results.filter((x) => !x.infraError)) {
       const list = byCase.get(r.case) ?? [];
       list.push(r);
       byCase.set(r.case, list);
     }
   }
 
-  const all = runs.flatMap((r) => r.results);
+  const everything = runs.flatMap((r) => r.results);
+  // Infrastructure failures (API quota, provider outage) measure the API
+  // account, not ClaimPilot, so they're excluded and reported separately.
+  const all = everything.filter((r) => !r.infraError);
+  const infra = everything.length - all.length;
+  if (!all.length) throw new Error("Every case-run failed for infrastructure reasons; nothing to summarize.");
   const isError = (r: EvalResult) => r.got.startsWith("ERROR") || r.finalState === "ERROR";
   const correct = all.filter((r) => r.got === r.expected).length;
   const errors = all.filter(isError).length;
@@ -77,6 +84,9 @@ export function summarize(runs: EvalRun[], sourceFiles: string[] = []): string {
     `**Verdict accuracy: ${correct}/${all.length} (${Math.round((100 * correct) / all.length)}%)** across ${byCase.size} case(s)` +
       (errors ? `; ${errors} case-run(s) ended in an error.` : ".")
   );
+  if (infra) {
+    lines.push(`${infra} case-run(s) excluded because they failed for infrastructure reasons (API quota or provider outage), not on ClaimPilot's judgment.`);
+  }
   if (hasState) {
     lines.push(
       `**Correct verdict and no error: ${endToEnd}/${all.length} (${Math.round((100 * endToEnd) / all.length)}%).**`

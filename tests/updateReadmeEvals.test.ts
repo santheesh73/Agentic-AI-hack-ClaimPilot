@@ -57,6 +57,18 @@ describe("summarize", () => {
     expect(withState).toContain("| B | STRONG | STRONG | ERROR | 1/1 |");
   });
 
+  it("excludes infrastructure failures from accuracy and reports them separately", () => {
+    const md = summarize([
+      run("2026-11-01T10:00:00Z", [
+        { ...r("A", "STRONG", "STRONG", 100), finalState: "AWAITING_APPROVAL" },
+        { ...r("B", "WEAK", "ERROR"), finalState: "ERROR", infraError: "quota" },
+      ]),
+    ]);
+    expect(md).toContain("**Verdict accuracy: 1/1 (100%)** across 1 case(s).");
+    expect(md).toContain("1 case-run(s) excluded because they failed for infrastructure reasons");
+    expect(md).not.toContain("| B |");
+  });
+
   it("refuses to summarize nothing", () => {
     expect(() => summarize([])).toThrow();
   });
