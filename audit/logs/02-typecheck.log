@@ -1,0 +1,6 @@
+
+> claimpilot@0.1.0 typecheck /tmp/claude-0/-home-user-Agentic-AI-hack-ClaimPilot/58aeddfb-02a6-5a46-ac5b-1b2fb9901560/scratchpad/fresh
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully

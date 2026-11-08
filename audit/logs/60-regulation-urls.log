@@ -1,0 +1,8 @@
+https://telanganatoday.com/policyholders-can-approach-irdai-for-unresolved-insurance-complaints -> 000
+https://cioins.co.in/Faqs -> 000
+https://blog.ipleaders.in/insurance-ombudsman-complaint-procedure-and-awards/ -> 000
+https://bimabharosa.irdai.gov.in/ -> 000
+https://irdai.gov.in/ -> 000
+Regulation source URLs: NOT VERIFIED.
+curl via sandbox proxy: all 5 hosts -> 000 (connect rejected, see 60-regulation-urls.log)
+web-fetch agent: getaddrinfo ENOTFOUND for telanganatoday.com, cioins.co.in, blog.ipleaders.in, bimabharosa.irdai.gov.in, www.cioins.co.in

@@ -1,0 +1,17 @@
+INTAKE->EXTRACT (redraft=0, rt_done=false)
+EXTRACT->RETRIEVE (redraft=0, rt_done=false)
+RETRIEVE->ASSESS (redraft=0, rt_done=false)
+ASSESS->DECIDE (redraft=0, rt_done=false)
+DECIDE->ROUTE (redraft=0, rt_done=false)
+ROUTE->DRAFT (redraft=0, rt_done=false)
+DRAFT->VERIFY (redraft=0, rt_done=false)
+VERIFY->DRAFT (redraft=1, rt_done=false)
+DRAFT->VERIFY (redraft=1, rt_done=false)
+VERIFY->DRAFT (redraft=2, rt_done=false)
+DRAFT->VERIFY (redraft=2, rt_done=false)
+VERIFY->REDTEAM (redraft=2, rt_done=false)
+REDTEAM->DRAFT (redraft=2, rt_done=true)
+DRAFT->VERIFY (redraft=2, rt_done=true)
+VERIFY->AWAITING_APPROVAL (redraft=2, rt_done=true)
+calls={"extract_rejection":1,"write_queries":1,"assess_case":1,"choose_route":1,"draft_appeal":4,"redteam_review":1}
+final body="# A\n\nBad cite."

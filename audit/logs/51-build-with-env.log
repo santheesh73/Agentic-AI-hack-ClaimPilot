@@ -1,0 +1,39 @@
+
+> claimpilot@0.1.0 build /home/user/Agentic-AI-hack-ClaimPilot
+> next build
+
+▲ Next.js 16.4.3 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 38ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.0s
+  Running TypeScript ...
+  Finished TypeScript in 2.7s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/7) ...
+  Generating static pages using 3 workers (1/7) 
+  Generating static pages using 3 workers (3/7) 
+  Generating static pages using 3 workers (5/7) 
+✓ Generating static pages using 3 workers (7/7) in 163ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/cases
+├ ƒ /api/cases/[id]
+├ ƒ /api/cases/[id]/answer
+├ ƒ /api/cases/[id]/approve
+├ ƒ /api/cases/[id]/documents
+├ ƒ /api/cases/[id]/simulate
+├ ƒ /api/cases/[id]/step
+├ ƒ /api/cases/sample
+├ ƒ /api/health
+├ ƒ /cases/[id]
+└ ƒ /cases/[id]/letter
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

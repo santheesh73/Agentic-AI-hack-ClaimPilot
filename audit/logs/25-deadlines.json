@@ -1,0 +1,137 @@
+{
+  "by_sent_date": {
+    "2026-01-31": [
+      {
+        "due_on": "2026-02-14",
+        "action": "ESCALATE_BIMA_BHAROSA",
+        "rule_id": "GRO_14D"
+      },
+      {
+        "due_on": "2026-02-28",
+        "action": "OMBUDSMAN_ELIGIBLE",
+        "rule_id": "OMB_ELIGIBLE"
+      },
+      {
+        "due_on": "2027-02-28",
+        "action": "OMBUDSMAN_LAST_DATE",
+        "rule_id": "OMB_1YEAR"
+      }
+    ],
+    "2028-02-29": [
+      {
+        "due_on": "2028-03-14",
+        "action": "ESCALATE_BIMA_BHAROSA",
+        "rule_id": "GRO_14D"
+      },
+      {
+        "due_on": "2028-03-29",
+        "action": "OMBUDSMAN_ELIGIBLE",
+        "rule_id": "OMB_ELIGIBLE"
+      },
+      {
+        "due_on": "2029-03-29",
+        "action": "OMBUDSMAN_LAST_DATE",
+        "rule_id": "OMB_1YEAR"
+      }
+    ],
+    "2027-12-20": [
+      {
+        "due_on": "2028-01-03",
+        "action": "ESCALATE_BIMA_BHAROSA",
+        "rule_id": "GRO_14D"
+      },
+      {
+        "due_on": "2028-01-20",
+        "action": "OMBUDSMAN_ELIGIBLE",
+        "rule_id": "OMB_ELIGIBLE"
+      },
+      {
+        "due_on": "2029-01-20",
+        "action": "OMBUDSMAN_LAST_DATE",
+        "rule_id": "OMB_1YEAR"
+      }
+    ],
+    "2026-12-31": [
+      {
+        "due_on": "2027-01-14",
+        "action": "ESCALATE_BIMA_BHAROSA",
+        "rule_id": "GRO_14D"
+      },
+      {
+        "due_on": "2027-01-31",
+        "action": "OMBUDSMAN_ELIGIBLE",
+        "rule_id": "OMB_ELIGIBLE"
+      },
+      {
+        "due_on": "2028-01-31",
+        "action": "OMBUDSMAN_LAST_DATE",
+        "rule_id": "OMB_1YEAR"
+      }
+    ],
+    "2026-03-31": [
+      {
+        "due_on": "2026-04-14",
+        "action": "ESCALATE_BIMA_BHAROSA",
+        "rule_id": "GRO_14D"
+      },
+      {
+        "due_on": "2026-04-30",
+        "action": "OMBUDSMAN_ELIGIBLE",
+        "rule_id": "OMB_ELIGIBLE"
+      },
+      {
+        "due_on": "2027-04-30",
+        "action": "OMBUDSMAN_LAST_DATE",
+        "rule_id": "OMB_1YEAR"
+      }
+    ]
+  },
+  "cap_boundary": {
+    "50 lakh exactly eligible": true,
+    "50 lakh + 1 eligible": false,
+    "followups_at_5000000": [
+      "ESCALATE_BIMA_BHAROSA",
+      "OMBUDSMAN_ELIGIBLE",
+      "OMBUDSMAN_LAST_DATE"
+    ],
+    "followups_at_5000001": [
+      "ESCALATE_BIMA_BHAROSA",
+      "OMBUDSMAN_ELIGIBLE",
+      "OMBUDSMAN_LAST_DATE",
+      "OMBUDSMAN_INELIGIBLE_CAP"
+    ]
+  },
+  "ui_over_cap_labels": [
+    "Escalate to IRDAI Bima Bharosa if unresolved",
+    "Eligible to file with the Insurance Ombudsman",
+    "Last date to file with the Insurance Ombudsman",
+    "Ombudsman route not available (claim exceeds ₹50 lakh cap)"
+  ],
+  "rule_ids_used": [
+    "GRO_14D",
+    "OMB_ELIGIBLE",
+    "OMB_1YEAR",
+    "OMB_CAP"
+  ],
+  "rule_ids_in_seed": [
+    "GRO_14D",
+    "BIMA_BHAROSA",
+    "OMB_ELIGIBLE",
+    "OMB_1YEAR",
+    "OMB_CAP"
+  ],
+  "missing_from_seed": [],
+  "timezone": {
+    "instant_utc": "2026-03-31T23:00:00.000Z",
+    "ist_local_date": "2026-04-01",
+    "simNow_returns": "2026-03-31"
+  },
+  "simulate_offset": {
+    "simNow(15) from 2026-12-20": "2027-01-04",
+    "simNow(-1)": "2025-12-31"
+  },
+  "seed_clock_days": {
+    "OMB_ELIGIBLE_seed_days": 30,
+    "code_uses": "addCalendarMonths(+1)"
+  }
+}

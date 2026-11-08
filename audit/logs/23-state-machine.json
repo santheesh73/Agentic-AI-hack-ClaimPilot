@@ -1,0 +1,83 @@
+{
+  "happy": {
+    "final": "AWAITING_APPROVAL",
+    "runStep_calls": 9,
+    "null_tool_events": [
+      "INTAKE",
+      "EXTRACT",
+      "RETRIEVE",
+      "ASSESS",
+      "DECIDE",
+      "ROUTE",
+      "DRAFT",
+      "VERIFY",
+      "REDTEAM"
+    ],
+    "verdict": "STRONG"
+  },
+  "uncited_claim": {
+    "final": "AWAITING_APPROVAL",
+    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1] Clause 9.4 of the policy also guarantees full reimbursement of all hospital bills within 7 days.",
+    "verification": [
+      {
+        "short_id": "E1",
+        "ok": true,
+        "score": 1
+      }
+    ]
+  },
+  "unparsed_marker": {
+    "final": "AWAITING_APPROVAL",
+    "body": "# Appeal\n\nThe policy covers 100% of this claim with no waiting period [cite:E1; E7].",
+    "verification": []
+  },
+  "strip_after_stop": {
+    "final": "AWAITING_APPROVAL",
+    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1] The policy waives all exclusions for senior citizens.",
+    "redrafts": 2
+  },
+  "inverted_quote": {
+    "final": "AWAITING_APPROVAL",
+    "evidence": [
+      {
+        "short_id": "E1",
+        "verified": true,
+        "score": 0.9829787234042553,
+        "quote": "Expenses related to the treatment of a pre-existing disease (PED) and its direct complicat"
+      }
+    ]
+  },
+  "terminal": {
+    "after_answer": {
+      "APPROVED": "ASSESS",
+      "DONT_APPEAL": "ASSESS",
+      "ERROR": "ASSESS"
+    },
+    "followups_after_double_approve": 6,
+    "distinct_actions": 3
+  },
+  "concurrency": {
+    "fulfilled": 1,
+    "locked409": 4,
+    "extract_calls": 0
+  },
+  "lease_expiry": {
+    "extract_calls": 2,
+    "extract_events": 2,
+    "second_result": "RETRIEVE"
+  },
+  "injection_rejection": {
+    "final": "AWAITING_APPROVAL",
+    "injection_events": 1
+  },
+  "injection_policy_page": {
+    "injection_events": 0
+  },
+  "loop_limit": {
+    "final": "AWAITING_APPROVAL",
+    "runStep_calls": 15,
+    "draft_calls": 6,
+    "redteam_calls": 3,
+    "error": null
+  }
+}

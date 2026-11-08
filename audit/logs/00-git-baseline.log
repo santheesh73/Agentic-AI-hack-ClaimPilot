@@ -1,0 +1,43 @@
+== HEAD
+hardening
+9288e2b9b6a1cb3cc98575929cd7baeee6af2ad3
+== status
+?? audit/
+== branches (ahead/behind origin/main)
+claude/trusting-feynman-m7ekcj                behind 24 ahead 0
+hardening                                     behind 0 ahead 3
+main                                          behind 23 ahead 0
+origin/claude/trusting-feynman-m7ekcj         behind 0 ahead 3
+origin/hardening                              behind 0 ahead 3
+origin/main                                   behind 0 ahead 0
+== last 30 commits (all of main+hardening)
+9288e2b Publish post-fix eval: 16/16 on the complete run; exclude quota failures
+8a73348 Add eval results: 16-case runs 1 and 2 of 3 after the A/H/L fixes
+1e3a7cc Fix eval failures A, H, L at their root causes; add 4 held-out cases
+3af4511 Merge pull request #3 from santheesh73/hardening
+b89a664 Phase 4: publish 12-case x3 eval results in README
+8ac44a4 Add eval results: final-state runs 1 and 2 of 3
+9bd6161 Eval: record each case's final state; report correct-and-no-error
+e8c2e13 Expand eval set to 12 cases; keep the pre-fix run for reference
+ad5f937 Fix bugs found by the first live 12-case eval run
+235326e Add schema drift check, README eval updater, history secret scan
+acab1ed Add per-owner rate limits and per-case token budget
+a6ebb93 Merge pull request #1 from santheesh73/hardening
+625d212 docs: README rewrite, RESUME.md, evals/README.md, MIT LICENSE (Phase 6)
+612e4f0 feat: CI workflows + deployment-readiness checklist (Phase 5)
+acbb53d docs: KNOWN_ISSUES.md reflects Phase 3 completion (coverage, bugs found, what remains)
+8491648 fix: parsePdf crashed on a real Node Buffer, hitting the live sample route and pnpm eval
+a4e98a5 test: API route handler tests calling handlers directly with Request objects
+32e3252 test: offline mocked-LLM integration test of the full state machine
+749a9ac test: deadline engine edge cases (year-end rollover, leap day) + rule_id-exists-in-seed checks
+5309059 test: exhaustive verdict/ask-gate truth table against an independent reference
+086ccb5 test: property-based tests for matchQuote against the real samples/policy.pdf
+76d530a test: prompt-injection detection tests; docs: KNOWN_ISSUES.md, verified secret-leak scan
+02c1b92 feat: Zod validation on every route, idempotent/race-safe /step, consistent error contract
+8d1a071 feat: lib/env.ts boot validation + GET /api/health
+06f0993 feat: configurable LLM_PROVIDER (anthropic|google), provider logged per event
+b8bf490 docs: Phase 0 audit - file tree, state machine, LLM call sites, routes, env vars, real coverage baseline, gap list
+651f901 Merge claude/trusting-feynman-m7ekcj into main
+f8b5f00 test: verify DraftView's citation-chip rendering with a real React render
+c9ddb61 fix: samples/ wasn't traced into the Vercel serverless bundle
+bff59b2 fix: simulate route had the same stale redraft-cleanup regex as machine.ts

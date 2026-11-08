@@ -1,0 +1,535 @@
+=================== app/api/cases/[id]/answer/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { getOwnedCase } from "@/lib/ownership";
+     3	import { recordAnswers } from "@/lib/agent/machine";
+     4	import { AnswerBody, parseJsonBody, errorResponse, notFoundResponse } from "@/lib/validation";
+     5	
+     6	export const maxDuration = 60;
+     7	
+     8	export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+     9	  try {
+    10	    const { id } = await params;
+    11	    const caseRow = await getOwnedCase(id);
+    12	    if (!caseRow) return notFoundResponse();
+    13	
+    14	    const { answers } = await parseJsonBody(req, AnswerBody);
+    15	    await recordAnswers(id, answers);
+    16	    return NextResponse.json({ ok: true });
+    17	  } catch (err) {
+    18	    return errorResponse(err);
+    19	  }
+    20	}
+=================== app/api/cases/[id]/approve/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { getOwnedCase } from "@/lib/ownership";
+     3	import { approveCase } from "@/lib/agent/machine";
+     4	import { ApiError, errorResponse, notFoundResponse } from "@/lib/validation";
+     5	
+     6	export const maxDuration = 60;
+     7	
+     8	export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+     9	  try {
+    10	    const { id } = await params;
+    11	    const caseRow = await getOwnedCase(id);
+    12	    if (!caseRow) return notFoundResponse();
+    13	    if (caseRow.state !== "AWAITING_APPROVAL") {
+    14	      throw new ApiError(400, "invalid_state", "Case is not awaiting approval.");
+    15	    }
+    16	
+    17	    await approveCase(id);
+    18	    return NextResponse.json({ ok: true });
+    19	  } catch (err) {
+    20	    return errorResponse(err);
+    21	  }
+    22	}
+=================== app/api/cases/[id]/documents/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
+     3	import { getOwnedCase } from "@/lib/ownership";
+     4	import { parsePdf, isLikelyImageOnly } from "@/lib/ingest/pdf";
+     5	import { normalize } from "@/lib/ingest/normalize";
+     6	import {
+     7	  DocumentKind,
+     8	  PASTED_LETTER_MAX_CHARS,
+     9	  UPLOAD_MAX_BYTES,
+    10	  UPLOAD_MAX_PAGES,
+    11	  ApiError,
+    12	  errorResponse,
+    13	  notFoundResponse,
+    14	} from "@/lib/validation";
+    15	
+    16	export const maxDuration = 60;
+    17	
+    18	const PDF_MAGIC_BYTES = "%PDF-";
+    19	
+    20	function hasPdfMagicBytes(buffer: ArrayBuffer): boolean {
+    21	  const head = new TextDecoder("latin1").decode(buffer.slice(0, PDF_MAGIC_BYTES.length));
+    22	  return head === PDF_MAGIC_BYTES;
+    23	}
+    24	
+    25	export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    26	  try {
+    27	    const { id } = await params;
+    28	    const caseRow = await getOwnedCase(id);
+    29	    if (!caseRow) return notFoundResponse();
+    30	
+    31	    const form = await req.formData();
+    32	    const kindResult = DocumentKind.safeParse(form.get("kind"));
+    33	    if (!kindResult.success) {
+    34	      throw new ApiError(400, "invalid_kind", "kind must be one of: policy, rejection, discharge, other.");
+    35	    }
+    36	    const kind = kindResult.data;
+    37	
+    38	    const file = form.get("file") as File | null;
+    39	    const pastedText = form.get("text") as string | null;
+    40	
+    41	    if (!file && !pastedText) {
+    42	      throw new ApiError(400, "missing_input", "Provide a file or pasted text.");
+    43	    }
+    44	    if (file && pastedText) {
+    45	      throw new ApiError(400, "ambiguous_input", "Provide either a file or pasted text, not both.");
+    46	    }
+    47	    if (pastedText && pastedText.length > PASTED_LETTER_MAX_CHARS) {
+    48	      throw new ApiError(413, "text_too_long", `Pasted text must not exceed ${PASTED_LETTER_MAX_CHARS} characters.`);
+    49	    }
+    50	
+    51	    const db = supabaseAdmin();
+    52	
+    53	    let pages: Array<{ page_no: number; text: string; text_norm: string }>;
+    54	    let storagePath: string | null = null;
+    55	    let filename: string | null = null;
+    56	
+    57	    if (file) {
+    58	      if (file.size > UPLOAD_MAX_BYTES) {
+    59	        throw new ApiError(413, "file_too_large", `File must not exceed ${UPLOAD_MAX_BYTES / (1024 * 1024)} MB.`);
+    60	      }
+    61	
+    62	      const buffer = await file.arrayBuffer();
+    63	
+    64	      const declaresNonPdf = file.type && file.type !== "application/pdf";
+    65	      const namedNonPdf = file.name && !file.name.toLowerCase().endsWith(".pdf");
+    66	      if ((declaresNonPdf && namedNonPdf) || !hasPdfMagicBytes(buffer)) {
+    67	        throw new ApiError(415, "unsupported_file_type", "Only PDF files are supported.");
+    68	      }
+    69	
+    70	      try {
+    71	        pages = await parsePdf(buffer);
+    72	      } catch {
+    73	        throw new ApiError(400, "unreadable_pdf", "Could not read this PDF. It may be corrupted or password-protected.");
+    74	      }
+    75	      if (pages.length === 0) {
+    76	        throw new ApiError(400, "empty_pdf", "This PDF has no pages.");
+    77	      }
+    78	      if (pages.length > UPLOAD_MAX_PAGES) {
+    79	        throw new ApiError(413, "too_many_pages", `PDF must not exceed ${UPLOAD_MAX_PAGES} pages.`);
+    80	      }
+    81	      if (isLikelyImageOnly(pages)) {
+    82	        throw new ApiError(
+    83	          422,
+    84	          "image_only_pdf",
+    85	          "This PDF appears to be image-only (scanned) with no extractable text. ClaimPilot cannot process scanned PDFs."
+    86	        );
+    87	      }
+    88	      filename = file.name;
+    89	      storagePath = `${id}/${kind}-${Date.now()}-${file.name}`;
+    90	      const { error: uploadError } = await db.storage.from(DOCUMENTS_BUCKET).upload(storagePath, buffer, {
+    91	        contentType: "application/pdf",
+    92	        upsert: false,
+    93	      });
+    94	      if (uploadError) throw uploadError;
+    95	    } else {
+    96	      pages = [{ page_no: 1, text: pastedText!, text_norm: normalize(pastedText!) }];
+    97	      filename = "pasted-text.txt";
+    98	    }
+    99	
+   100	    const { data: doc, error: docError } = await db
+   101	      .from("documents")
+   102	      .insert({
+   103	        case_id: id,
+   104	        kind,
+   105	        storage_path: storagePath,
+   106	        filename,
+   107	        page_count: pages.length,
+   108	      })
+   109	      .select("id")
+   110	      .single();
+   111	    if (docError) throw docError;
+   112	
+   113	    const pageRows = pages.map((p) => ({
+   114	      document_id: doc.id,
+   115	      case_id: id,
+   116	      page_no: p.page_no,
+   117	      text: p.text,
+   118	      text_norm: p.text_norm,
+   119	    }));
+   120	    const { error: pagesError } = await db.from("pages").insert(pageRows);
+   121	    if (pagesError) throw pagesError;
+   122	
+   123	    return NextResponse.json({ document_id: doc.id, page_count: pages.length });
+   124	  } catch (err) {
+   125	    return errorResponse(err);
+   126	  }
+   127	}
+=================== app/api/cases/[id]/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
+     3	import { getOwnedCase } from "@/lib/ownership";
+     4	import { deadlinesForUi } from "@/lib/agent/deadlines";
+     5	import { errorResponse, notFoundResponse } from "@/lib/validation";
+     6	
+     7	export const maxDuration = 60;
+     8	
+     9	export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    10	  const { id } = await params;
+    11	  const caseRow = await getOwnedCase(id);
+    12	  if (!caseRow) return notFoundResponse();
+    13	
+    14	  const db = supabaseAdmin();
+    15	  const [{ data: events }, { data: evidence }, { data: drafts }, { data: followups }, { data: documents }] =
+    16	    await Promise.all([
+    17	      db.from("agent_events").select("*").eq("case_id", id).order("id", { ascending: true }),
+    18	      db.from("evidence").select("*").eq("case_id", id).order("short_id"),
+    19	      db.from("drafts").select("*").eq("case_id", id).order("version", { ascending: true }),
+    20	      db.from("followups").select("*").eq("case_id", id).order("due_on", { ascending: true }),
+    21	      db.from("documents").select("id, kind, filename, page_count").eq("case_id", id),
+    22	    ]);
+    23	
+    24	  const deadlines = deadlinesForUi(caseRow.complaint_sent_on, caseRow.claim_amount_inr);
+    25	
+    26	  const pageIds = [...new Set((evidence ?? []).map((e) => e.page_id))];
+    27	  const { data: evidencePages } = pageIds.length
+    28	    ? await db.from("pages").select("id, page_no").in("id", pageIds)
+    29	    : { data: [] as Array<{ id: string; page_no: number }> };
+    30	  const pageNoById = new Map((evidencePages ?? []).map((p) => [p.id, p.page_no]));
+    31	  const evidenceWithPageNo = (evidence ?? []).map((e) => ({ ...e, page_no: pageNoById.get(e.page_id) ?? null }));
+    32	
+    33	  return NextResponse.json({
+    34	    case: caseRow,
+    35	    events: events ?? [],
+    36	    evidence: evidenceWithPageNo,
+    37	    drafts: drafts ?? [],
+    38	    followups: followups ?? [],
+    39	    documents: documents ?? [],
+    40	    deadlines,
+    41	  });
+    42	}
+    43	
+    44	export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    45	  try {
+    46	    const { id } = await params;
+    47	    const caseRow = await getOwnedCase(id);
+    48	    if (!caseRow) return notFoundResponse();
+    49	
+    50	    const db = supabaseAdmin();
+    51	
+    52	    const { data: documents } = await db.from("documents").select("storage_path").eq("case_id", id);
+    53	    const storagePaths = (documents ?? []).map((d) => d.storage_path).filter((p): p is string => p != null);
+    54	    if (storagePaths.length) {
+    55	      // Best-effort: an orphaned storage object is a minor leak, not worth
+    56	      // failing the delete over if Storage is briefly unavailable.
+    57	      await db.storage.from(DOCUMENTS_BUCKET).remove(storagePaths);
+    58	    }
+    59	
+    60	    const { error } = await db.from("cases").delete().eq("id", id);
+    61	    if (error) throw error;
+    62	    return NextResponse.json({ ok: true });
+    63	  } catch (err) {
+    64	    return errorResponse(err);
+    65	  }
+    66	}
+=================== app/api/cases/[id]/simulate/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { getOwnedCase } from "@/lib/ownership";
+     3	import { supabaseAdmin } from "@/lib/db";
+     4	import { simNow } from "@/lib/agent/deadlines";
+     5	import { logEvent, generate, MODEL_STRONG } from "@/lib/models";
+     6	import { DraftOutput } from "@/lib/agent/schemas";
+     7	import { verifyCitationsTool } from "@/lib/agent/tools/verifyCitationsTool";
+     8	import { stripSentencesCiting } from "@/lib/agent/verify";
+     9	import { SimulateBody, parseJsonBody, errorResponse, notFoundResponse } from "@/lib/validation";
+    10	
+    11	export const maxDuration = 60;
+    12	
+    13	export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    14	  try {
+    15	    return await handle(req, params);
+    16	  } catch (err) {
+    17	    return errorResponse(err);
+    18	  }
+    19	}
+    20	
+    21	async function handle(req: NextRequest, params: Promise<{ id: string }>) {
+    22	  const { id } = await params;
+    23	  const caseRow = await getOwnedCase(id);
+    24	  if (!caseRow) return notFoundResponse();
+    25	
+    26	  const { days } = await parseJsonBody(req, SimulateBody);
+    27	
+    28	  const db = supabaseAdmin();
+    29	  const newOffset = caseRow.sim_offset_days + days;
+    30	  await db.from("cases").update({ sim_offset_days: newOffset }).eq("id", id);
+    31	
+    32	  const now = simNow(newOffset);
+    33	  const { data: due } = await db
+    34	    .from("followups")
+    35	    .select("*")
+    36	    .eq("case_id", id)
+    37	    .eq("status", "pending")
+    38	    .lte("due_on", now);
+    39	
+    40	  for (const fu of due ?? []) {
+    41	    let outputMd: string | null = null;
+    42	
+    43	    if (fu.action === "ESCALATE_BIMA_BHAROSA") {
+    44	      const { data: evidence } = await db.from("evidence").select("*").eq("case_id", id).eq("verified", true);
+    45	      const { data: pages } = await db
+    46	        .from("pages")
+    47	        .select("id, page_no, text_norm")
+    48	        .in("id", (evidence ?? []).map((e) => e.page_id));
+    49	      const evidenceById = Object.fromEntries((evidence ?? []).map((e) => [e.short_id, e]));
+    50	      const pagesById = Object.fromEntries((pages ?? []).map((p) => [p.id, p]));
+    51	      const evidenceList = (evidence ?? [])
+    52	        .map((e) => `${e.short_id} — ${e.claim} — "${e.quote}"`)
+    53	        .join("\n");
+    54	
+    55	      const draft = await generate({
+    56	        caseId: id,
+    57	        step: "SIMULATE",
+    58	        tool: "escalation_draft",
+    59	        model: MODEL_STRONG,
+    60	        schema: DraftOutput,
+    61	        system:
+    62	          "Write a short escalation complaint to the IRDAI Bima Bharosa Grievance Redressal Cell, noting the insurer's Grievance Redressal Officer did not resolve the complaint within 14 days. Every sentence relying on the policy must end with [cite:E#] citing only the given ids. Do not invent facts.",
+    63	        prompt: `Facts: ${JSON.stringify(caseRow.facts)}\n\nEvidence:\n${evidenceList}`,
+    64	      });
+    65	
+    66	      const results = verifyCitationsTool(draft.body_md, evidenceById, pagesById);
+    67	      const failedIds = results.filter((r) => !r.ok).map((r) => r.short_id);
+    68	      outputMd = stripSentencesCiting(draft.body_md, failedIds);
+    69	    }
+    70	
+    71	    await db.from("followups").update({ status: "fired", output_md: outputMd }).eq("id", fu.id);
+    72	    await logEvent({
+    73	      caseId: id,
+    74	      step: "SIMULATE",
+    75	      summary: `Day ${newOffset}: ${fu.action.replace(/_/g, " ").toLowerCase()}${outputMd ? " — drafted escalation" : ""}`,
+    76	    });
+    77	  }
+    78	
+    79	  return NextResponse.json({ sim_offset_days: newOffset, fired: due?.length ?? 0 });
+    80	}
+=================== app/api/cases/[id]/step/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { getOwnedCase } from "@/lib/ownership";
+     3	import { runStep, StepLockedError } from "@/lib/agent/machine";
+     4	import { supabaseAdmin } from "@/lib/db";
+     5	import { notFoundResponse, errorResponse } from "@/lib/validation";
+     6	import { enforceRateLimit } from "@/lib/rateLimit";
+     7	
+     8	export const maxDuration = 60;
+     9	
+    10	export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    11	  try {
+    12	    const { id } = await params;
+    13	    const caseRow = await getOwnedCase(id);
+    14	    if (!caseRow) return notFoundResponse();
+    15	    await enforceRateLimit(caseRow.owner_id, "step");
+    16	
+    17	    const db = supabaseAdmin();
+    18	    const { data: before } = await db
+    19	      .from("agent_events")
+    20	      .select("id")
+    21	      .eq("case_id", id)
+    22	      .order("id", { ascending: false })
+    23	      .limit(1)
+    24	      .maybeSingle();
+    25	    const lastIdBefore = before?.id ?? 0;
+    26	
+    27	    let result;
+    28	    try {
+    29	      result = await runStep(id);
+    30	    } catch (err) {
+    31	      if (err instanceof StepLockedError) {
+    32	        return NextResponse.json(
+    33	          { error: { code: "step_in_progress", message: err.message }, state: err.state },
+    34	          { status: 409 }
+    35	        );
+    36	      }
+    37	      throw err;
+    38	    }
+    39	
+    40	    const { data: newEvents } = await db
+    41	      .from("agent_events")
+    42	      .select("*")
+    43	      .eq("case_id", id)
+    44	      .gt("id", lastIdBefore)
+    45	      .order("id", { ascending: true });
+    46	
+    47	    return NextResponse.json({ state: result.state, error: result.error ?? null, events: newEvents ?? [] });
+    48	  } catch (err) {
+    49	    return errorResponse(err);
+    50	  }
+    51	}
+=================== app/api/cases/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
+     3	import { CreateCaseBody, parseJsonBody, errorResponse } from "@/lib/validation";
+     4	import { enforceRateLimit } from "@/lib/rateLimit";
+     5	
+     6	export const maxDuration = 60;
+     7	
+     8	export async function POST(req: NextRequest) {
+     9	  try {
+    10	    const body = await parseJsonBody(req, CreateCaseBody);
+    11	
+    12	    const ownerId = await getOrCreateOwnerId();
+    13	    await enforceRateLimit(ownerId, "newCase");
+    14	    const db = supabaseAdmin();
+    15	    const { data, error } = await db
+    16	      .from("cases")
+    17	      .insert({
+    18	        owner_id: ownerId,
+    19	        title: body.title ?? null,
+    20	        insurer: body.insurer ?? null,
+    21	        claim_amount_inr: body.claim_amount_inr ?? null,
+    22	        state: "INTAKE",
+    23	      })
+    24	      .select("id")
+    25	      .single();
+    26	
+    27	    if (error) return NextResponse.json({ error: { code: "db_error", message: error.message } }, { status: 500 });
+    28	    return NextResponse.json({ id: data.id });
+    29	  } catch (err) {
+    30	    return errorResponse(err);
+    31	  }
+    32	}
+=================== app/api/cases/sample/route.ts
+     1	import { NextRequest, NextResponse } from "next/server";
+     2	import { readFile } from "node:fs/promises";
+     3	import path from "node:path";
+     4	import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
+     5	import { parsePdf } from "@/lib/ingest/pdf";
+     6	import { normalize } from "@/lib/ingest/normalize";
+     7	import { SampleBody, parseJsonBody, errorResponse, ApiError } from "@/lib/validation";
+     8	import { enforceRateLimit } from "@/lib/rateLimit";
+     9	
+    10	export const maxDuration = 60;
+    11	
+    12	const SAMPLES: Record<string, { title: string; insurer: string; claim_amount_inr: number; letter: string }> = {
+    13	  a: {
+    14	    title: "Sample Case A — PED waiting period already expired",
+    15	    insurer: "United General Health Insurance Co. Ltd.",
+    16	    claim_amount_inr: 185000,
+    17	    letter: "letter_a.txt",
+    18	  },
+    19	  b: {
+    20	    title: "Sample Case B — Non-disclosure, diagnosis date unknown",
+    21	    insurer: "United General Health Insurance Co. Ltd.",
+    22	    claim_amount_inr: 92500,
+    23	    letter: "letter_b.txt",
+    24	  },
+    25	  c: {
+    26	    title: "Sample Case C — Cosmetic surgery, explicit exclusion",
+    27	    insurer: "United General Health Insurance Co. Ltd.",
+    28	    claim_amount_inr: 110000,
+    29	    letter: "letter_c.txt",
+    30	  },
+    31	};
+    32	
+    33	export async function POST(req: NextRequest) {
+    34	  try {
+    35	    const { sample } = await parseJsonBody(req, SampleBody);
+    36	    const config = SAMPLES[sample];
+    37	
+    38	    const samplesDir = path.join(process.cwd(), "samples");
+    39	    let policyBuffer: Buffer;
+    40	    let letterText: string;
+    41	    try {
+    42	      [policyBuffer, letterText] = await Promise.all([
+    43	        readFile(path.join(samplesDir, "policy.pdf")),
+    44	        readFile(path.join(samplesDir, config.letter), "utf-8"),
+    45	      ]);
+    46	    } catch {
+    47	      throw new ApiError(500, "samples_unavailable", "Sample files are not available on this deployment.");
+    48	    }
+    49	
+    50	    const ownerId = await getOrCreateOwnerId();
+    51	    await enforceRateLimit(ownerId, "newCase");
+    52	    const db = supabaseAdmin();
+    53	
+    54	    const { data: caseRow, error: caseError } = await db
+    55	      .from("cases")
+    56	      .insert({ owner_id: ownerId, title: config.title, insurer: config.insurer, claim_amount_inr: config.claim_amount_inr, state: "INTAKE" })
+    57	      .select("id")
+    58	      .single();
+    59	    if (caseError) throw caseError;
+    60	    const caseId = caseRow.id as string;
+    61	
+    62	    const policyPages = await parsePdf(policyBuffer);
+    63	    const { data: policyDoc, error: policyDocError } = await db
+    64	      .from("documents")
+    65	      .insert({ case_id: caseId, kind: "policy", filename: "policy.pdf", page_count: policyPages.length })
+    66	      .select("id")
+    67	      .single();
+    68	    if (policyDocError) throw policyDocError;
+    69	
+    70	    const { error: policyPagesError } = await db.from("pages").insert(
+    71	      policyPages.map((p) => ({ document_id: policyDoc.id, case_id: caseId, page_no: p.page_no, text: p.text, text_norm: p.text_norm }))
+    72	    );
+    73	    if (policyPagesError) throw policyPagesError;
+    74	
+    75	    const { data: rejectionDoc, error: rejectionDocError } = await db
+    76	      .from("documents")
+    77	      .insert({ case_id: caseId, kind: "rejection", filename: config.letter, page_count: 1 })
+    78	      .select("id")
+    79	      .single();
+    80	    if (rejectionDocError) throw rejectionDocError;
+    81	
+    82	    const { error: rejectionPageError } = await db.from("pages").insert([
+    83	      { document_id: rejectionDoc.id, case_id: caseId, page_no: 1, text: letterText, text_norm: normalize(letterText) },
+    84	    ]);
+    85	    if (rejectionPageError) throw rejectionPageError;
+    86	
+    87	    return NextResponse.json({ id: caseId });
+    88	  } catch (err) {
+    89	    return errorResponse(err);
+    90	  }
+    91	}
+=================== app/api/health/route.ts
+     1	import { NextResponse } from "next/server";
+     2	import { getEnv } from "@/lib/env";
+     3	import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
+     4	
+     5	export const maxDuration = 10;
+     6	
+     7	const VERSION = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
+     8	
+     9	export async function GET() {
+    10	  let env;
+    11	  try {
+    12	    env = getEnv();
+    13	  } catch {
+    14	    // Never echo the validation error: it lists which vars are missing, which
+    15	    // is useful in logs but not something to expose over an unauthenticated route.
+    16	    return NextResponse.json(
+    17	      { ok: false, provider: null, db: "error", storage: "error", version: VERSION },
+    18	      { status: 503 }
+    19	    );
+    20	  }
+    21	
+    22	  let db: "ok" | "error" = "error";
+    23	  let storage: "ok" | "error" = "error";
+    24	  try {
+    25	    const client = supabaseAdmin();
+    26	    const { error: dbError } = await client.from("regulations").select("id").limit(1);
+    27	    db = dbError ? "error" : "ok";
+    28	
+    29	    const { error: storageError } = await client.storage.from(DOCUMENTS_BUCKET).list("", { limit: 1 });
+    30	    storage = storageError ? "error" : "ok";
+    31	  } catch {
+    32	    // leave db/storage as "error"
+    33	  }
+    34	
+    35	  const ok = db === "ok" && storage === "ok";
+    36	  return NextResponse.json({ ok, provider: env.LLM_PROVIDER, db, storage, version: VERSION }, { status: ok ? 200 : 503 });
+    37	}

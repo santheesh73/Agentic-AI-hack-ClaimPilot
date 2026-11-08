@@ -1,0 +1,39 @@
+{
+  "50 x POST /api/cases (same-cookie)": {
+    "created": 10,
+    "http429": 40
+  },
+  "50 x POST /api/cases (fresh-cookie-each-time)": {
+    "created": 50,
+    "http429": 0
+  },
+  "delete": {
+    "status": 200,
+    "storage_ops": [
+      {
+        "op": "remove",
+        "path": "22222222-2222-4222-8222-222222222222/p.pdf"
+      }
+    ],
+    "rows_left_by_table": {
+      "cases": 0,
+      "documents": 1,
+      "pages": 1,
+      "evidence": 1,
+      "agent_events": 1,
+      "drafts": 1,
+      "followups": 1
+    },
+    "note": "child rows rely on ON DELETE CASCADE in Postgres (supabase/migrations/0001_init.sql); the route deletes only the cases row"
+  },
+  "simulate_race": {
+    "statuses": [
+      200,
+      200
+    ],
+    "escalation_llm_calls": 2,
+    "final_sim_offset_days": 15,
+    "expected_offset_if_serialized": 30,
+    "fired_events": 2
+  }
+}

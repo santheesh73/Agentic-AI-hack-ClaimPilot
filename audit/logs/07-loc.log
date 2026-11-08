@@ -1,0 +1,12 @@
+== LOC per folder (ts/tsx/sql/mjs/css; non-blank lines)
+app            1069
+components      750
+lib            1586
+tests          1770
+evals           149
+scripts         438
+supabase        154
+== files over 300 lines
+  6097 total
+   716 lib/agent/machine.ts
+   325 app/cases/[id]/page.tsx

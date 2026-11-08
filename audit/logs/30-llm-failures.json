@@ -1,0 +1,95 @@
+[
+  {
+    "mode": "valid",
+    "provider_calls": 1,
+    "failure_events_logged": 0,
+    "logged_status": [],
+    "ms": 21,
+    "result": "returned {\"verdict\":\"A\",\"n\":1}"
+  },
+  {
+    "mode": "extra fields",
+    "provider_calls": 1,
+    "failure_events_logged": 0,
+    "logged_status": [],
+    "ms": 2,
+    "result": "returned {\"verdict\":\"A\",\"n\":1}"
+  },
+  {
+    "mode": "malformed (not JSON)",
+    "provider_calls": 2,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 4,
+    "result": "threw AI_NoObjectGeneratedError: No object generated: could not parse the response."
+  },
+  {
+    "mode": "partial JSON",
+    "provider_calls": 2,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 3,
+    "result": "threw AI_NoObjectGeneratedError: No object generated: could not parse the response."
+  },
+  {
+    "mode": "wrong enum",
+    "provider_calls": 2,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 4,
+    "result": "threw AI_NoObjectGeneratedError: No object generated: response did not match schema."
+  },
+  {
+    "mode": "timeout/abort",
+    "provider_calls": 2,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 4,
+    "result": "threw TimeoutError: The operation was aborted due to timeout"
+  },
+  {
+    "mode": "HTTP 429",
+    "provider_calls": 6,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 12016,
+    "result": "threw AI_RetryError: Failed after 3 attempts. Last error: AI_APICallError: HTTP 429"
+  },
+  {
+    "mode": "HTTP 503",
+    "provider_calls": 6,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "n/a",
+      "n/a"
+    ],
+    "ms": 12019,
+    "result": "threw AI_RetryError: Failed after 3 attempts. Last error: AI_APICallError: HTTP 503"
+  },
+  {
+    "mode": "HTTP 401",
+    "provider_calls": 2,
+    "failure_events_logged": 2,
+    "logged_status": [
+      "401",
+      "401"
+    ],
+    "ms": 4,
+    "result": "threw AI_APICallError: HTTP 401"
+  }
+]

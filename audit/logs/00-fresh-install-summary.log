@@ -1,0 +1,5 @@
+01-install                   rc=0  6.1s
+02-typecheck                 rc=0  6.8s
+03-lint                      rc=0  5.4s
+04-test-coverage             rc=0  4.4s
+05-build                     rc=0  14.8s

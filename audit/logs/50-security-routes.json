@@ -1,0 +1,99 @@
+{
+  "idor": {
+    "attacker | GET /api/cases/[id]": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | DELETE /api/cases/[id]": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | POST step": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | POST answer": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | POST approve": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | POST simulate": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "attacker | POST documents": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | GET /api/cases/[id]": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | DELETE /api/cases/[id]": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | POST step": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | POST answer": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | POST approve": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | POST simulate": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    },
+    "no-cookie | POST documents": {
+      "status": 404,
+      "db_unchanged": true,
+      "body_leaks_victim_data": false
+    }
+  },
+  "validation": {
+    "POST /api/cases: negative amount": 400,
+    "POST /api/cases: huge amount": 400,
+    "POST /api/cases: title 10k chars": 400,
+    "POST /api/cases: text/plain JSON body": 200,
+    "POST /api/cases: not json": 400,
+    "POST answer: 2000 keys x 2000 chars (4 MB)": {
+      "status": 200,
+      "stored_answer_bytes": 4020891
+    },
+    "simulate days=0": 400,
+    "simulate days=-1": 400,
+    "simulate days=3651": 400,
+    "simulate days=1.5": 400,
+    "simulate days=\"10\"": 400,
+    "upload with ../ filename": {
+      "status": 200,
+      "storage_path": "11111111-1111-4111-8111-111111111111/policy-1794129842958-../../other-case/evil.pdf"
+    },
+    "upload exe renamed .pdf": 415,
+    "upload to an APPROVED case": 200,
+    "GET case when DB throws": {
+      "uncaught": "Error: connect ECONNREFUSED 10.0.0.5:5432 password=hunter2"
+    }
+  }
+}

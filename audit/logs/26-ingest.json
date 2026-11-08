@@ -1,0 +1,121 @@
+{
+  "three_pages.pdf": {
+    "ok": true,
+    "pages": 3,
+    "ms": 77,
+    "rss_growth_mb": 15,
+    "imageOnly": false,
+    "first": "PAGE MARKER 1 -- Clause 1.1 shall apply to this policy.",
+    "page_nos": [
+      1,
+      2,
+      3
+    ]
+  },
+  "image_only.pdf": {
+    "ok": true,
+    "pages": 2,
+    "ms": 9,
+    "rss_growth_mb": 3,
+    "imageOnly": true,
+    "first": "",
+    "page_nos": [
+      1,
+      2
+    ]
+  },
+  "corrupt.pdf": {
+    "ok": false,
+    "ms": 2,
+    "error": "Invalid PDF structure."
+  },
+  "encrypted.pdf": {
+    "ok": false,
+    "ms": 2,
+    "error": "No password given"
+  },
+  "zero_pages.pdf": {
+    "ok": true,
+    "pages": 0,
+    "ms": 1,
+    "rss_growth_mb": 0,
+    "imageOnly": true,
+    "first": null,
+    "page_nos": []
+  },
+  "large_250_pages.pdf": {
+    "ok": true,
+    "pages": 250,
+    "ms": 128,
+    "rss_growth_mb": 41,
+    "imageOnly": false,
+    "first": "Large document page 1. Expenses shall be excluded until the expiry of ",
+    "page_nos": [
+      1,
+      2,
+      3
+    ]
+  },
+  "hindi.pdf": {
+    "ok": true,
+    "pages": 1,
+    "ms": 18,
+    "rss_growth_mb": 1,
+    "imageOnly": false,
+    "first": "पूव\u0000-मौजूदा बीमारी के उपचार से संबंिधत खच\u0000 48 महीने तक बाहर रहेंगे।\nPr",
+    "page_nos": [
+      1
+    ]
+  },
+  "with_javascript.pdf": {
+    "ok": true,
+    "pages": 3,
+    "ms": 3,
+    "rss_growth_mb": 0,
+    "imageOnly": false,
+    "first": "PAGE MARKER 1 -- Clause 1.1 shall apply to this policy.",
+    "page_nos": [
+      1,
+      2,
+      3
+    ]
+  },
+  "decompression_bomb.pdf": {
+    "ok": true,
+    "pages": 1,
+    "ms": 6065,
+    "rss_growth_mb": 427,
+    "imageOnly": true,
+    "first": "",
+    "page_nos": [
+      1
+    ]
+  },
+  "page_numbering": [
+    {
+      "page_no": 1,
+      "ours": "PAGE MARKER 1",
+      "pdftotext": "PAGE MARKER 1"
+    },
+    {
+      "page_no": 2,
+      "ours": "PAGE MARKER 2",
+      "pdftotext": "PAGE MARKER 2"
+    },
+    {
+      "page_no": 3,
+      "ours": "PAGE MARKER 3",
+      "pdftotext": "PAGE MARKER 3"
+    }
+  ],
+  "real_policy": {
+    "pages": 5,
+    "chars": [
+      1915,
+      2041,
+      2099,
+      2092,
+      571
+    ]
+  }
+}

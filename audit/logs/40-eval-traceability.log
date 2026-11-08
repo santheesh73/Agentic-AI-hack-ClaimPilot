@@ -1,0 +1,6 @@
+current (evals/results/*.json): {'runs': 1, 'case_runs': 16, 'correct': 16, 'correct_no_error': 16, 'drafted': 10, 'mean_cite': 100.0, 'p50_ms': 32561, 'p95_ms': 40028, 'mean_tokens': 8967}
+v1: {'runs': 3, 'case_runs': 36, 'correct': 32, 'correct_no_error': 30, 'drafted': 18, 'mean_cite': 100.0, 'p50_ms': 30647, 'p95_ms': 50828, 'mean_tokens': 6949}
+quota-exhausted run 1: completed non-error=9, correct among them=9
+quota-exhausted run 2: completed non-error=0, correct among them=0
+no-final-state: {'runs': 3, 'case_runs': 36, 'correct': 33, 'correct_no_error': 33, 'drafted': 19, 'mean_cite': 100.0, 'p50_ms': 25978, 'p95_ms': 35246, 'mean_tokens': 7149}
+pre-fix: {'runs': 1, 'case_runs': 12, 'correct': 2, 'correct_no_error': 2, 'drafted': 0, 'mean_cite': None, 'p50_ms': 19333, 'p95_ms': 25397, 'mean_tokens': 5481}

@@ -1,0 +1,185 @@
+{
+  "formats": [
+    {
+      "name": "canonical",
+      "text": "Claim is covered. [cite:E1]",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "no space before",
+      "text": "Claim is covered.[cite:E1]",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "space after colon",
+      "text": "Covered [cite: E1].",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "comma list",
+      "text": "Covered [cite: E1, E2].",
+      "intended": [
+        "E1",
+        "E2"
+      ],
+      "parsed": [
+        "E1",
+        "E2"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "adjacent markers",
+      "text": "Covered [cite:E1][cite:E2].",
+      "intended": [
+        "E1",
+        "E2"
+      ],
+      "parsed": [
+        "E1",
+        "E2"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "uppercase CITE",
+      "text": "Covered [CITE:E1].",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "lowercase id",
+      "text": "Covered [cite:e1].",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [
+        "e1"
+      ],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "nested brackets",
+      "text": "Covered [[cite:E1]].",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    },
+    {
+      "name": "semicolon list",
+      "text": "Covered [cite:E1; E2].",
+      "intended": [
+        "E1",
+        "E2"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "space-separated list",
+      "text": "Covered [cite:E1 E2].",
+      "intended": [
+        "E1",
+        "E2"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "range",
+      "text": "Covered [cite:E1-E3].",
+      "intended": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "parenthesised",
+      "text": "Covered (cite:E1).",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "markdown link style",
+      "text": "Covered [E1](cite).",
+      "intended": [
+        "E1"
+      ],
+      "parsed": [],
+      "matches_intent": false,
+      "unparsed_marker_left_in_letter": true
+    },
+    {
+      "name": "unknown id",
+      "text": "Covered [cite:E99].",
+      "intended": [
+        "E99"
+      ],
+      "parsed": [
+        "E99"
+      ],
+      "matches_intent": true,
+      "unparsed_marker_left_in_letter": false
+    }
+  ],
+  "verifyDraft_on_unparsed_marker": [],
+  "strip_marker_after_full_stop": {
+    "input": "The waiting period has expired. [cite:E9] Please reconsider the claim. We attach the discharge summary.",
+    "output": "The waiting period has expired. We attach the discharge summary."
+  },
+  "strip_marker_before_full_stop": {
+    "input": "The waiting period has expired [cite:E9]. Please reconsider the claim. We attach the discharge summary.",
+    "output": "Please reconsider the claim. We attach the discharge summary."
+  },
+  "strip_preserves_markdown": {
+    "input": "Para one sentence. [cite:E1]\n\nPara two has a bad cite [cite:E9].\n\n- bullet item one\n- bullet item two",
+    "output": "Para one sentence. - bullet item one\n- bullet item two"
+  },
+  "strip_abbreviation": {
+    "input": "Per Sec. 6.3 of the policy the claim is valid [cite:E9]. Thank you.",
+    "output": "Per Sec. Thank you."
+  }
+}

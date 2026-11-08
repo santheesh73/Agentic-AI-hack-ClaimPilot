@@ -1,0 +1,29 @@
+== process.env reads (app lib components evals scripts)
+app/api/health/route.ts:7:process.env.VERCEL_GIT_COMMIT_SHA
+evals/run.ts:154:process.env.LLM_PROVIDER
+evals/run.ts:155:process.env.MODEL_STRONG
+evals/run.ts:159:process.env.MODEL_FAST
+lib/agent/machine.ts:99:process.env.MAX_TOKENS_PER_CASE
+lib/db.ts:29:process.env.NODE_ENV
+lib/models.ts:18:process.env.LLM_PROVIDER
+lib/models.ts:28:process.env.MODEL_FAST
+lib/models.ts:29:process.env.MODEL_STRONG
+lib/models.ts:31:process.env.GEMINI_API_KEY
+lib/models.ts:32:process.env.ANTHROPIC_API_KEY
+scripts/prove-local.mjs:20:process.env.GEMINI_API_KEY
+scripts/prove-local.mjs:21:process.env.MODEL_FAST
+scripts/prove-local.mjs:22:process.env.MODEL_STRONG
+
+== .env.example keys
+NEXT_PUBLIC_SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+LLM_PROVIDER=
+GEMINI_API_KEY=
+ANTHROPIC_API_KEY=
+MODEL_FAST=
+MODEL_STRONG=
+MAX_TOKENS_PER_CASE=
+
+== read but not in .env.example
+NODE_ENV
+VERCEL_GIT_COMMIT_SHA

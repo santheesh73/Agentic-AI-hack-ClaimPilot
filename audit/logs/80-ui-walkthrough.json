@@ -1,0 +1,405 @@
+{
+  "pages": {
+    "landing@375": {
+      "horizontalOverflow": true,
+      "disclaimerVisible": false,
+      "buttons": [
+        "Load sample case A",
+        "Load sample case B",
+        "Load sample case C",
+        "Start assessment"
+      ],
+      "consoleErrors": []
+    },
+    "landing@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": false,
+      "buttons": [
+        "Load sample case A",
+        "Load sample case B",
+        "Load sample case C",
+        "Start assessment"
+      ],
+      "consoleErrors": []
+    },
+    "landing@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": false,
+      "buttons": [
+        "Load sample case A",
+        "Load sample case B",
+        "Load sample case C",
+        "Start assessment"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": ".bg-primary"
+        }
+      ],
+      "tabOrder": [
+        "button:Load sample case A",
+        "button:Load sample case B",
+        "button:Load sample case C",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "textarea:",
+        "button:Start assessment",
+        "body:ClaimPilot\n\nTurn a reject",
+        "button:Load sample case A"
+      ]
+    },
+    "strong@375": {
+      "horizontalOverflow": true,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Approve",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": []
+    },
+    "strong@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Approve",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": []
+    },
+    "strong@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Approve",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 8,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "landmark-one-main",
+          "impact": "moderate",
+          "nodes": 1,
+          "sample": "html"
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": 7,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": ".bg-card.text-card-foreground.gap-6:nth-child(2) > .space-y-4.max-h-\\[70vh\\].overflow-y-auto"
+        }
+      ],
+      "tabOrder": [
+        "a:Open printable letter",
+        "button:Approve",
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "button:v1",
+        "button:v2",
+        "body:Draft for your review, no",
+        "a:Open printable letter",
+        "button:Approve",
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "button:v1"
+      ],
+      "chipFound": 1,
+      "chipButtons": []
+    },
+    "approved@375": {
+      "horizontalOverflow": true,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Simulate +15 days",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": []
+    },
+    "approved@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Simulate +15 days",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": []
+    },
+    "approved@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Simulate +15 days",
+        "Delete",
+        "v1",
+        "v2"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 7,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "landmark-one-main",
+          "impact": "moderate",
+          "nodes": 1,
+          "sample": "html"
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": 8,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": ".md\\:col-span-1.bg-card.text-card-foreground:nth-child(2) > .space-y-4.max-h-\\[70vh\\].overflow-y-auto"
+        }
+      ],
+      "tabOrder": [
+        "a:Open printable letter",
+        "button:Simulate +15 days",
+        "button:Delete",
+        "a:GRO_14D",
+        "a:OMB_ELIGIBLE",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "button:v1",
+        "button:v2",
+        "body:Draft for your review, no",
+        "a:Open printable letter",
+        "button:Simulate +15 days",
+        "button:Delete"
+      ]
+    },
+    "ask@375": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete",
+        "Continue"
+      ],
+      "consoleErrors": []
+    },
+    "ask@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete",
+        "Continue"
+      ],
+      "consoleErrors": []
+    },
+    "ask@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete",
+        "Continue"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 5,
+          "sample": ".bg-accent"
+        }
+      ],
+      "tabOrder": [
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:",
+        "input:"
+      ],
+      "dialogOpen": true,
+      "focusTrappedInDialog": true
+    },
+    "dont@375": {
+      "horizontalOverflow": true,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": []
+    },
+    "dont@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": []
+    },
+    "dont@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 5,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "landmark-one-main",
+          "impact": "moderate",
+          "nodes": 1,
+          "sample": "html"
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": 4,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "scrollable-region-focusable",
+          "impact": "serious",
+          "nodes": 1,
+          "sample": ".bg-card.text-card-foreground.gap-6:nth-child(2) > .space-y-4.max-h-\\[70vh\\].overflow-y-auto"
+        }
+      ],
+      "tabOrder": [
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "div:yes\nC1_CLAUSE_EXISTS\n\nPol",
+        "body:Draft for your review, no"
+      ]
+    },
+    "error@375": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": []
+    },
+    "error@768": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": []
+    },
+    "error@1440": {
+      "horizontalOverflow": false,
+      "disclaimerVisible": true,
+      "buttons": [
+        "Run",
+        "Delete"
+      ],
+      "consoleErrors": [],
+      "axe": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": 6,
+          "sample": ".bg-accent"
+        },
+        {
+          "id": "landmark-one-main",
+          "impact": "moderate",
+          "nodes": 1,
+          "sample": "html"
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "nodes": 4,
+          "sample": ".bg-accent"
+        }
+      ],
+      "tabOrder": [
+        "button:Delete",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "body:Draft for your review, no",
+        "button:Delete",
+        "body:Draft for your review, no"
+      ]
+    }
+  },
+  "letter": {
+    "text": "Print / Save as PDF\nAppeal for reconsideration\n\nThe 48-month waiting period expired on 01 March 2026. (Policy p. 3)\n\nPlease settle the claim of Rs 1,85,000."
+  },
+  "letter_not_found": {
+    "text": "Print / Save as PDF\n\nLoading…"
+  },
+  "replay": {
+    "events_visible_at_0_8s": 1,
+    "events_visible_at_6_8s": 9
+  }
+}

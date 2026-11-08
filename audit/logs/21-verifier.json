@@ -1,0 +1,130 @@
+{
+  "pages": 5,
+  "verbatim": {
+    "ok": 200,
+    "of": 200,
+    "fails": []
+  },
+  "edited_1to3": {
+    "ok": 200,
+    "of": 200,
+    "rate": 1
+  },
+  "fabricated": {
+    "falseMatch": 0,
+    "of": 200,
+    "hits": []
+  },
+  "semantic_tampering": {
+    "accepted": 9,
+    "of": 9,
+    "results": [
+      {
+        "clause": "Expenses related to the treatment of a pre-existin...",
+        "original_ok": true,
+        "tamper": "insert 'not' (shall be -> shall not be)",
+        "tampered_ok": true,
+        "score": 0.983
+      },
+      {
+        "clause": "Expenses related to the treatment of a pre-existin...",
+        "original_ok": true,
+        "tamper": "number change 48 -> 24 months",
+        "tampered_ok": true,
+        "score": 0.991
+      },
+      {
+        "clause": "Expenses related to the treatment of a pre-existin...",
+        "original_ok": true,
+        "tamper": "excluded -> included",
+        "tampered_ok": true,
+        "score": 0.991
+      },
+      {
+        "clause": "Expenses related to the treatment of the following...",
+        "original_ok": true,
+        "tamper": "insert 'not' (shall be -> shall not be)",
+        "tampered_ok": true,
+        "score": 0.979
+      },
+      {
+        "clause": "Expenses related to the treatment of the following...",
+        "original_ok": true,
+        "tamper": "number change 24 -> 12 months",
+        "tampered_ok": true,
+        "score": 0.987
+      },
+      {
+        "clause": "Expenses related to the treatment of the following...",
+        "original_ok": true,
+        "tamper": "excluded -> included",
+        "tampered_ok": true,
+        "score": 0.987
+      },
+      {
+        "clause": "a condition first diagnosed, or for which medical ...",
+        "original_ok": true,
+        "tamper": "delete negation (does not constitute -> does constitute)",
+        "tampered_ok": true,
+        "score": 0.971
+      },
+      {
+        "clause": "Cosmetic surgery undertaken for aesthetic purposes...",
+        "original_ok": true,
+        "tamper": "excluded -> included",
+        "tampered_ok": true,
+        "score": 0.988
+      },
+      {
+        "clause": "Cosmetic surgery undertaken for aesthetic purposes...",
+        "original_ok": true,
+        "tamper": "is excluded -> is not excluded",
+        "tampered_ok": true,
+        "score": 0.977
+      }
+    ]
+  },
+  "edges": {
+    "empty": {
+      "ok": false,
+      "score": 0
+    },
+    "whitespace_only": {
+      "ok": false,
+      "score": 0
+    },
+    "longer_than_page": {
+      "ok": false,
+      "score": 0
+    },
+    "regex_specials": {
+      "ok": false,
+      "score": 0.30952380952380953
+    },
+    "unicode_curly_and_ligature": {
+      "ok": true,
+      "score": 1
+    },
+    "nfkc_fullwidth": {
+      "ok": true,
+      "score": 0.9714285714285714
+    },
+    "hyphen_linebreak_quote": {
+      "ok": true,
+      "score": 0.9789473684210527
+    },
+    "short_exact": {
+      "ok": true,
+      "score": 1
+    },
+    "short_fuzzy_typo": {
+      "ok": false,
+      "score": 0
+    }
+  },
+  "perf": {
+    "largest_page_chars": 2099,
+    "ms_per_call": 236.9,
+    "synthetic_50k_chars_ms": 6453.8
+  }
+}

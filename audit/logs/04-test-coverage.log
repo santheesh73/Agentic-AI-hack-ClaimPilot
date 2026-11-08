@@ -1,0 +1,19 @@
+
+> claimpilot@0.1.0 test /tmp/claude-0/-home-user-Agentic-AI-hack-ClaimPilot/58aeddfb-02a6-5a46-ac5b-1b2fb9901560/scratchpad/fresh
+> vitest run -- --coverage
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.5 /tmp/claude-0/-home-user-Agentic-AI-hack-ClaimPilot/58aeddfb-02a6-5a46-ac5b-1b2fb9901560/scratchpad/fresh
+
+
+ Test Files  17 passed (17)
+      Tests  220 passed (220)
+   Start at  09:12:45
+   Duration  3.31s (tests 73%, import 17%, transform 9%, worker 1%)
+
+    Isolate  17 workers spawned · ~85ms startup each (spawn + environment, per file)
+             at least ~398ms faster with isolate: false — reuses workers across files instead of one per file
+

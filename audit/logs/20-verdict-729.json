@@ -1,0 +1,146 @@
+{
+  "total": 1458,
+  "mismatches": 456,
+  "groups": {
+    "ARGUABLE -> WEAK": 18,
+    "ASK -> WEAK": 6,
+    "ASK -> ARGUABLE": 42,
+    "WEAK -> ASK": 162,
+    "STRONG -> ASK": 228
+  },
+  "c6_changes_outcome_in": 0,
+  "examples": [
+    {
+      "C1": "yes",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": false,
+      "design": "ARGUABLE",
+      "code": "WEAK"
+    },
+    {
+      "C1": "yes",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "WEAK"
+    },
+    {
+      "C1": "unknown",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "yes",
+      "C2": "unknown",
+      "C3": "no",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "unknown",
+      "C2": "unknown",
+      "C3": "no",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "yes",
+      "C2": "yes",
+      "C3": "unknown",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "unknown",
+      "C2": "yes",
+      "C3": "unknown",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "yes",
+      "C2": "unknown",
+      "C3": "unknown",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "unknown",
+      "C2": "unknown",
+      "C3": "unknown",
+      "C4": "no",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    },
+    {
+      "C1": "yes",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "unknown",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": false,
+      "design": "ARGUABLE",
+      "code": "WEAK"
+    },
+    {
+      "C1": "yes",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "unknown",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "WEAK"
+    },
+    {
+      "C1": "unknown",
+      "C2": "yes",
+      "C3": "no",
+      "C4": "unknown",
+      "C5": "yes",
+      "C6": "yes",
+      "missing": true,
+      "design": "ASK",
+      "code": "ARGUABLE"
+    }
+  ]
+}

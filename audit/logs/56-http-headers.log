@@ -1,0 +1,28 @@
+== GET /
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "12v0dwxqbedctq"
+Content-Type: text/html; charset=utf-8
+Content-Length: 16634
+Date: Sun, 08 Nov 2026 09:24:53 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+== GET /api/health
+HTTP/1.1 503 Service Unavailable
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+content-type: application/json
+Date: Sun, 08 Nov 2026 09:25:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":false,"provider":"google","db":"error","storage":"error","version":"dev"}
+== POST /api/cases/not-a-uuid/step (no cookie)
+{"error":{"code":"not_found","message":"Not found"}}

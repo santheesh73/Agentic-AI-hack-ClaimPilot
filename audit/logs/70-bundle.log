@@ -1,0 +1,18 @@
+client JS files: 19 total raw KB: 824 gzip KB: 258
+   70.3 KB gz   224 KB raw  chunks/0kdgd0on-3y05.js
+   43.2 KB gz   155 KB raw  chunks/40t075rb0a9cy.js
+   38.7 KB gz   110 KB raw  chunks/0cz1d0mv5g_q7.js
+   34.1 KB gz   113 KB raw  chunks/0z9hzbp0pvys6.js
+   17.1 KB gz    52 KB raw  chunks/13etktwjc0qc1.js
+   10.5 KB gz    32 KB raw  chunks/1moqvcrv4edu_.js
+    9.9 KB gz    36 KB raw  chunks/32g7eo5x1xeao.js
+    8.0 KB gz    29 KB raw  chunks/10yx9s_eou6qv.js
+client bundle contains "You are assessing whether" : false
+client bundle contains "C4_EXPLICIT_EXCLUSION: Setting aside" : false
+client bundle contains "senior claims reviewer" : false
+client bundle contains "supabaseAdmin" : false
+client bundle contains "generateObject" : false
+client bundle contains "fastest-levenshtein" : false
+client bundle contains "SUPABASE_SERVICE_ROLE_KEY" : false
+client bundle contains "unpdf" : false
+nft samples entries: 17 ['../../../../../../samples/letter_a.txt', '../../../../../../samples/letter_b.txt', '../../../../../../samples/letter_c.txt', '../../../../../../samples/letter_d.txt']
