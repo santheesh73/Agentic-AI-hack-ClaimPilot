@@ -1,0 +1,9 @@
+{
+  "name": "case_d_30day_wait_but_accident",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_d.txt",
+  "answers": {
+    "accident": "The fracture was caused by a road traffic accident on 22 September 2026; the police FIR and hospital casualty record confirm it."
+  },
+  "expected": "STRONG"
+}

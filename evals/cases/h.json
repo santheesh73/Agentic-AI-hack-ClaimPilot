@@ -1,0 +1,9 @@
+{
+  "name": "case_h_ped_portability_credit",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_h.txt",
+  "answers": {
+    "portability": "I ported to this policy on 01 March 2025 from Star Health without any break. I had been continuously covered by that insurer since 01 January 2021, so with the ported period I had over 68 months of continuous coverage. The portability was accepted by this insurer at the time."
+  },
+  "expected": "STRONG"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "case_g_cataract_waiting_completed",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_g.txt",
+  "answers": {
+    "coverage": "My first policy with this insurer started on 15 April 2024 and has been renewed every year without a break, so I had about 29 months of continuous coverage on 03 October 2026."
+  },
+  "expected": "STRONG"
+}

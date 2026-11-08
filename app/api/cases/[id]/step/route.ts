@@ -3,6 +3,7 @@ import { getOwnedCase } from "@/lib/ownership";
 import { runStep, StepLockedError } from "@/lib/agent/machine";
 import { supabaseAdmin } from "@/lib/db";
 import { notFoundResponse, errorResponse } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -11,6 +12,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const { id } = await params;
     const caseRow = await getOwnedCase(id);
     if (!caseRow) return notFoundResponse();
+    await enforceRateLimit(caseRow.owner_id, "step");
 
     const db = supabaseAdmin();
     const { data: before } = await db

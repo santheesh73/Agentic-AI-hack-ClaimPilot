@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
 import { CreateCaseBody, parseJsonBody, errorResponse } from "@/lib/validation";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -9,6 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await parseJsonBody(req, CreateCaseBody);
 
     const ownerId = await getOrCreateOwnerId();
+    await enforceRateLimit(ownerId, "newCase");
     const db = supabaseAdmin();
     const { data, error } = await db
       .from("cases")

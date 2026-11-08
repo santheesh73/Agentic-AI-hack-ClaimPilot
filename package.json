@@ -13,7 +13,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "eval": "tsx --env-file=.env.local evals/run.ts"
+    "eval": "tsx --conditions=react-server --env-file=.env.local evals/run.ts",
+    "eval:readme": "tsx scripts/update-readme-evals.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.98",

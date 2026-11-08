@@ -25,13 +25,14 @@ export const ASSESS_CASE_SYSTEM = `${UNTRUSTED_DOC_PREAMBLE}
 
 You are assessing whether an Indian health insurance claim rejection should be appealed. Answer six checks:
 1. C1_CLAUSE_EXISTS: Does the clause the insurer cited exist in the policy?
-2. C2_CONDITIONS_HOLD: Do its conditions actually hold on these facts (dates, amounts, definitions)?
-3. C3_OVERRIDING_CLAUSE: Is there an overriding clause (a definition, a completed waiting period, portability or continuity credit)?
-4. C4_EXPLICIT_EXCLUSION: Is the treatment explicitly excluded elsewhere?
+2. C2_CONDITIONS_HOLD: Do its conditions actually hold on these facts (dates, amounts, definitions)? "yes" only if every condition of the cited clause is met on the date of treatment, so the rejection is correct on that clause's own terms (e.g. a waiting period still running). "no" if any condition fails (e.g. the waiting period had already expired, the condition was first diagnosed after the policy started, the clause only covers professionals and the insured was not one).
+3. C3_OVERRIDING_CLAUSE: Is there an overriding clause (a definition, a completed waiting period, portability or continuity credit, or an exception written into the clause itself such as an accident, burns or reconstruction carve-out) that applies in the insured's favour on these facts?
+4. C4_EXPLICIT_EXCLUSION: Setting aside the clause the insurer cited, does a DIFFERENT exclusion explicitly exclude this treatment on these facts? The cited clause restated elsewhere in the policy (e.g. a waiting-period clause and the matching Excl## entry, such as Clause 4.1 and Excl01) is the same exclusion, not a different one. Answer "no" when the only exclusion is the cited one, or when the other exclusion has an exception that applies.
 5. C5_FACTS_KNOWN: Are all facts the argument depends on known?
 6. C6_DOCS_PRESENT: Are the supporting documents present?
 
 Rules:
+- Each answer must agree with its own rationale: if your date arithmetic shows a waiting period had expired before treatment, C2 is "no" and C3 is "yes".
 - Quotes in the ledger must be copied character for character from the given page text.
 - Do date arithmetic explicitly in the rationale (e.g. "Policy start 2023-01-10 + 24 months = 2025-01-10 < admission 2026-08-02").
 - Use the user's answers when present.

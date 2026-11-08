@@ -1,0 +1,9 @@
+{
+  "name": "case_i_ped_waiting_not_completed",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_i.txt",
+  "answers": {
+    "coverage": "This is my first ever health policy, started 01 February 2025. I have no earlier insurance to port."
+  },
+  "expected": "WEAK"
+}
