@@ -88,7 +88,7 @@
     "simulate days=\"10\"": 400,
     "upload with ../ filename": {
       "status": 200,
-      "storage_path": "11111111-1111-4111-8111-111111111111/policy-1794129842958-../../other-case/evil.pdf"
+      "storage_path": "11111111-1111-4111-8111-111111111111/policy-1794140803318-../../other-case/evil.pdf"
     },
     "upload exe renamed .pdf": 415,
     "upload to an APPROVED case": 200,

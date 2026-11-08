@@ -1,0 +1,24 @@
+{
+ "testRunner": "vitest",
+ "mutate": [
+  "lib/agent/verify.ts",
+  "lib/agent/deadlines.ts",
+  "lib/agent/machine.ts:482-497"
+ ],
+ "reporters": [
+  "clear-text",
+  "json"
+ ],
+ "jsonReporter": {
+  "fileName": "stryker-report.json"
+ },
+ "concurrency": 4,
+ "timeoutMS": 60000,
+ "vitest": {
+  "configFile": "vitest.config.ts"
+ },
+ "coverageAnalysis": "perTest",
+ "plugins": [
+  "@stryker-mutator/vitest-runner"
+ ]
+}

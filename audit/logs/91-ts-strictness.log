@@ -1,0 +1,46 @@
+{"asCast":28,"nonNull":20,"any":0}
+nonNull app/api/cases/[id]/documents/route.ts:96: pages = [{ page_no: 1, text: pastedText!, text_norm: normalize(pastedText!) }];
+nonNull lib/agent/machine.ts:251: for (const d of docs!) {
+nonNull lib/agent/machine.ts:283: .eq("document_id", rejectionDoc!.id)
+nonNull lib/agent/machine.ts:321: const facts = c.facts!;
+nonNull lib/agent/machine.ts:411: const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {});
+nonNull lib/agent/machine.ts:417: const short_id = tempToShort.get(l.temp_id)!;
+nonNull lib/agent/machine.ts:514: const { deadlines, ...route } = await chooseRouteTool(c.id, c.facts!);
+nonNull lib/agent/machine.ts:564: const output = await draftAppeal(c.id, c.facts!, c.route!, evidenceForDraft, c.answers ?? 
+nonNull lib/agent/machine.ts:570: route_step: c.route!.step,
+nonNull lib/agent/machine.ts:594: const results = verifyCitationsTool(draft!.body_md, evidenceById, pagesById);
+nonNull lib/agent/machine.ts:602: .eq("id", draft!.id);
+nonNull lib/agent/machine.ts:614: await db.from("drafts").update({ verification: results }).eq("id", draft!.id);
+nonNull lib/agent/machine.ts:624: const cleaned = stripSentencesCiting(draft!.body_md, failedIds);
+nonNull lib/agent/machine.ts:631: .eq("id", draft!.id);
+nonNull lib/agent/machine.ts:665: const redteam = await redteamReview(c.id, draft!.body_md, evidenceList, candidatePages);
+nonNull lib/agent/machine.ts:674: await db.from("drafts").update({ redteam: cleanedRedteam }).eq("id", draft!.id);
+nonNull evals/run.ts:41: policyPages.map((p) => ({ document_id: policyDoc!.id, case_id: caseId, page_no: p.page_no,
+nonNull evals/run.ts:52: { document_id: rejectionDoc!.id, case_id: caseId, page_no: 1, text: letterText, text_norm:
+-- as casts:
+asCast app/api/cases/[id]/documents/route.ts:38: const file = form.get("file") as File | null;
+asCast app/api/cases/[id]/documents/route.ts:39: const pastedText = form.get("text") as string | null;
+asCast app/api/cases/[id]/route.ts:29: : { data: [] as Array<{ id: string; page_no: number }> };
+asCast app/api/cases/sample/route.ts:60: const caseId = caseRow.id as string;
+asCast app/cases/[id]/letter/page.tsx:40: <Button onClick={() => window.print()}>Print / Save as PDF</Button>
+asCast app/cases/[id]/page.tsx:73: return json as CaseData;
+asCast app/page.tsx:58: const id = caseData.id as string;
+asCast lib/agent/deadlines.ts:49: /** now = today + sim_offset_days, as an ISO date string. */
+asCast lib/agent/machine.ts:68: return data as CaseRow;
+asCast lib/agent/machine.ts:347: if (refs.some((re) => re.test(p.text as string))) {
+asCast lib/agent/machine.ts:356: const head = (p.text as string).slice(0, 300);
+asCast lib/agent/prompts.ts:18: Extract facts from an Indian health insurance claim rejection letter. Only include facts s
+asCast lib/agent/prompts.ts:29: 3. C3_OVERRIDING_CLAUSE: Is there an overriding clause (a definition, a completed waiting 
+asCast lib/agent/prompts.ts:30: 4. C4_EXPLICIT_EXCLUSION: Setting aside the clause the insurer cited, does a DIFFERENT exc
+asCast lib/agent/prompts.ts:52: - Do not invent regulations, timelines or case law. Mention the escalation path only as gi
+asCast lib/agent/tools/chooseRouteTool.ts:4: import { chooseRoute as chooseRoutePure, deadlinesForUi } from "../deadlines";
+asCast lib/agent/tools/searchPolicy.ts:23: return (data ?? []) as SearchedPage[];
+asCast lib/agent/verify.ts:1: import { distance as levenshtein } from "fastest-levenshtein";
+asCast lib/models.ts:74: content: (prompt as CachedTextPart[]).map((p) => ({
+asCast lib/models.ts:124: return result.object as z.infer<T>;
+asCast lib/models.ts:137: summary: `Model call failed (attempt ${attempt + 1}/${MAX_ATTEMPTS}, status=${status ?? "n
+asCast lib/validation.ts:25: /** Parses the request body as JSON and validates it against `schema`,
+asCast evals/run.ts:29: const caseId = caseRow.id as string;
+asCast evals/run.ts:82: const missingFacts = (pausedCase?.missing_facts ?? []) as Array<{ key: string }>;
+asCast evals/run.ts:141: results.push({ case: evalCase.name, expected: evalCase.expected, got: `ERROR: ${(err as Er
+asCast scripts/update-readme-evals.ts:138: const runs = files.map((f) => JSON.parse(fs.readFileSync(f, "utf-8")) as EvalRun);

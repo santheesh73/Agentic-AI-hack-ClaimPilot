@@ -1,0 +1,602 @@
+12:19:43 (2434) INFO ProjectReader Found 3 of 163 file(s) to be mutated.
+12:19:44 (2434) INFO Instrumenter Instrumented 3 source file(s) with 241 mutant(s)
+12:19:44 (2434) INFO ConcurrencyTokenProvider Creating 4 test runner process(es).
+12:19:45 (2434) INFO DryRunExecutor Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+12:19:51 (2434) INFO DryRunExecutor Initial test run succeeded. Ran 171 tests in 6 seconds (net 3767.4532709999985 ms, overhead 2584.5467290000015 ms).
+
+All tests
+  deadlines.test.ts
+    ✓ chooseRoute > always routes to the insurer GRO first [line 7] (killed 5)
+    ✓ scheduleFollowups > adds 14 days for the Bima Bharosa escalation [line 16] (killed 6)
+    ✓ scheduleFollowups > adds 1 calendar month for Ombudsman eligibility [line 22] (killed 8)
+    ✓ scheduleFollowups > handles Jan 31 + 1 month by clamping to Feb 28 (non-leap year) [line 28] (killed 1)
+    ~ scheduleFollowups > handles Jan 31 + 1 month in a leap year by clamping to Feb 29 [line 34] (covered 37)
+    ✓ scheduleFollowups > sets the Ombudsman last date to 1 month + 1 year out [line 40] (killed 4)
+    ✓ scheduleFollowups > flags Ombudsman ineligibility above the Rs 50 lakh cap [line 46] (killed 6)
+    ✓ scheduleFollowups > does not flag ineligibility at or below the cap [line 51] (killed 4)
+    ~ scheduleFollowups > handles a year-end rollover (Dec 31 + 1 month -> Jan 31 next year) [line 56] (covered 37)
+    ~ scheduleFollowups > handles a leap day (Feb 29 + 1 month -> Mar 29, no clamping needed) [line 62] (covered 37)
+    ✓ scheduleFollowups > every rule_id it produces exists in the regulations seed data (supabase/migrations/0001_init.sql) [line 68] (killed 4)
+    ✓ deadlinesForUi > returns nothing before a complaint has been sent [line 78] (killed 4)
+    ✓ deadlinesForUi > every deadline's rule_id exists in the regulations seed data [line 82] (killed 9)
+    ✓ isOmbudsmanEligibleByAmount > is eligible when amount is null (unknown) [line 93] (killed 2)
+    ✓ isOmbudsmanEligibleByAmount > is eligible at exactly the cap [line 96] (killed 4)
+    ✓ isOmbudsmanEligibleByAmount > is ineligible above the cap [line 99] (killed 2)
+    ~ simNow > adds the sim offset to the given date [line 105] (covered 6)
+    ~ simNow > defaults to 0 offset producing today [line 108] (covered 6)
+  decision.test.ts
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=yes [line 39] (killed 7)
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=no [line 39] (killed 8)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=unknown [line 39] (covered 51)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=no C4=yes [line 39] (covered 31)
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=no C4=no [line 39] (killed 8)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=no C4=unknown [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=unknown C4=yes [line 39] (covered 35)
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=unknown C4=no [line 39] (killed 4)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=unknown C4=unknown [line 39] (covered 51)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=yes C4=yes [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=yes C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=yes C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=no C4=yes [line 39] (covered 31)
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=no C4=no [line 39] (killed 7)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=no C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=unknown C4=yes [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=unknown C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=no C3=unknown C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=yes C4=yes [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=yes C4=no [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=yes C4=unknown [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=no C4=yes [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=no C4=no [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=no C4=unknown [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=unknown C4=yes [line 39] (covered 31)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=unknown C4=no [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=unknown C3=unknown C4=unknown [line 39] (covered 47)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=yes C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=yes C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=no C4=yes [line 39] (covered 27)
+    ✓ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=no C4=no [line 39] (killed 3)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=no C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=unknown C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=yes C3=unknown C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=yes C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=yes C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=no C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=no C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=no C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=unknown C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=no C3=unknown C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=yes C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=yes C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=no C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=no C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=no C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=unknown C4=no [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=no C2=unknown C3=unknown C4=unknown [line 39] (covered 35)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=yes C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=yes C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=no C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=no C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=no C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=unknown C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=yes C3=unknown C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=yes C4=no [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=yes C4=unknown [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=no C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=no C4=no [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=no C4=unknown [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=unknown C4=no [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=no C3=unknown C4=unknown [line 39] (covered 39)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=yes C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=yes C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=yes C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=no C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=no C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=no C4=unknown [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=unknown C4=yes [line 39] (covered 27)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=unknown C4=no [line 39] (covered 43)
+    ~ decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=unknown C2=unknown C3=unknown C4=unknown [line 39] (covered 43)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=yes, hasUnresolvedMissingFacts=false -> false [line 66] (covered 0)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=yes, hasUnresolvedMissingFacts=true -> false [line 66] (covered 0)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=no, hasUnresolvedMissingFacts=false -> false [line 66] (covered 0)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=no, hasUnresolvedMissingFacts=true -> true [line 66] (covered 0)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=unknown, hasUnresolvedMissingFacts=false -> false [line 66] (covered 0)
+    ✘ needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations) > C5=unknown, hasUnresolvedMissingFacts=true -> true [line 66] (covered 0)
+  DraftView.test.tsx
+    ~ DraftView > renders a single [cite:E1] marker as one clickable chip [line 13] (covered 7)
+    ~ DraftView > renders a multi-id marker as separate adjacent chips, not one merged chip [line 20] (covered 7)
+    ~ DraftView > leaves a normal markdown link untouched [line 31] (covered 2)
+  errorMessage.test.ts
+    ✘ errorMessage > uses Error.message [line 5] (covered 0)
+    ✘ errorMessage > reads message (and details) from a plain PostgrestError-shaped object [line 8] (covered 0)
+    ✘ errorMessage > never returns [object Object] [line 14] (covered 0)
+  evalInfraError.test.ts
+    ~ infraErrorOf > classifies quota, rate-limit and outage errors as infrastructure [line 6] (covered 17)
+    ✘ infraErrorOf > does not excuse real pipeline errors [line 13] (covered 0)
+  machine.integration.test.ts
+    ✓ state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft [line 168] (killed 26)
+    ~ state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids [line 200] (covered 81)
+    ✓ state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified [line 226] (killed 1)
+    ✓ state machine integration (mocked LLM + in-memory DB, fully offline) > keeps stripped citations recorded as failed, not silently ok [line 240] (killed 16)
+    ~ state machine integration (mocked LLM + in-memory DB, fully offline) > verifies a verbatim quote even when the model labels it with the wrong page [line 257] (covered 81)
+    ~ state machine integration (mocked LLM + in-memory DB, fully offline) > surfaces a model schema failure as ERROR after exhausting retries [line 272] (covered 17)
+  rateLimit.test.ts
+    ✘ windowStart > buckets every timestamp in the same minute to the same window [line 24] (covered 0)
+    ✘ enforceRateLimit > allows exactly 30 /step calls per minute and rejects the 31st with a 429 [line 36] (covered 0)
+    ✘ enforceRateLimit > resets in the next window [line 43] (covered 0)
+    ✘ enforceRateLimit > counts each owner separately [line 50] (covered 0)
+    ✘ POST /api/cases rate limit > allows 10 new cases per hour, then returns 429 with the standard error shape [line 59] (covered 0)
+    ~ MAX_TOKENS_PER_CASE > sets ERROR with a clear message once a case has used its budget [line 83] (covered 17)
+    ✘ MAX_TOKENS_PER_CASE > is ignored when unset [line 95] (covered 0)
+    ✘ MAX_TOKENS_PER_CASE > ignores a non-numeric value rather than crashing [line 101] (covered 0)
+  retrievalFixes.test.ts
+    ✘ clauseRefs > finds a numbered clause cited inside a section reference [line 8] (covered 0)
+    ✘ clauseRefs > does not match a different clause number that merely contains the digits [line 14] (covered 0)
+    ✘ clauseRefs > matches Excl ids with or without zero padding, but not a longer id [line 20] (covered 0)
+    ✘ clauseRefs > returns nothing for a citation with no clause id [line 26] (covered 0)
+    ~ locateQuote > keeps the stated page when the quote is on it [line 36] (covered 8)
+    ~ locateQuote > re-attributes a verbatim quote labelled with the wrong page [line 40] (covered 35)
+    ~ locateQuote > still fails a quote that is on no page [line 44] (covered 52)
+  routes.cases.test.ts
+    ✘ POST /api/cases > creates a case for the current owner on a valid body [line 32] (covered 0)
+    ✘ POST /api/cases > returns 400 with a structured error on a negative claim amount [line 41] (covered 0)
+    ✘ POST /api/cases > returns 400 on malformed JSON [line 49] (covered 0)
+    ~ GET /api/cases/[id] > returns the case for its owner [line 79] (covered 11)
+    ✘ GET /api/cases/[id] > returns 404 (not 403) for a case owned by a different browser [line 88] (covered 0)
+    ✘ GET /api/cases/[id] > returns 404 for a nonexistent case id [line 98] (covered 0)
+    ~ POST /api/cases/[id]/step > returns 409 when a step is already in progress for the case [line 107] (covered 11)
+    ✘ POST /api/cases/[id]/step > returns 404 for a case owned by someone else [line 121] (covered 0)
+    ✘ POST /api/cases/[id]/simulate > rejects a non-positive days value [line 135] (covered 0)
+    ~ POST /api/cases/[id]/simulate > advances sim_offset_days on a valid request [line 141] (covered 6)
+  routes.misc.test.ts
+    ~ POST /api/cases/[id]/answer > merges answers and resumes at ASSESS [line 55] (covered 17)
+    ✘ POST /api/cases/[id]/answer > rejects a body without an answers object [line 66] (covered 0)
+    ✘ POST /api/cases/[id]/answer > returns 404 for a nonexistent case [line 72] (covered 0)
+    ✓ POST /api/cases/[id]/approve > approves a case in AWAITING_APPROVAL and schedules follow-ups [line 81] (killed 8)
+    ✘ POST /api/cases/[id]/approve > rejects approving a case not in AWAITING_APPROVAL [line 106] (covered 0)
+    ✘ POST /api/cases/sample > creates a case from the real samples/ files for a valid sample id [line 117] (covered 0)
+    ✘ POST /api/cases/sample > rejects an unknown sample id [line 129] (covered 0)
+    ✘ GET /api/health > reports ok when the DB and storage checks succeed [line 137] (covered 0)
+  verify.property.test.ts
+    ✓ matchQuote property tests (against the real samples/policy.pdf) > a random verbatim span from the real policy always matches with score 1 [line 31] (killed 1)
+    ✓ matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92 [line 49] (killed 27)
+    ✓ matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match [line 88] (killed 3)
+  verify.test.ts
+    ✘ normalize > expands ligatures [line 5] (covered 0)
+    ✘ normalize > joins hyphenated line breaks [line 9] (covered 0)
+    ✘ normalize > collapses extra whitespace [line 13] (covered 0)
+    ✘ normalize > converts curly quotes and dashes to ascii [line 19] (covered 0)
+    ~ matchQuote > matches an exact substring [line 33] (covered 8)
+    ✓ matchQuote > still matches with a one-word change [line 42] (killed 1)
+    ~ matchQuote > fails an invented sentence [line 51] (covered 52)
+    ✓ matchQuote > requires exact substring for short quotes [line 59] (killed 2)
+    ✓ verifyDraft > passes a valid cite [line 76] (killed 3)
+    ~ verifyDraft > fails an unknown cite id [line 81] (covered 17)
+    ~ verifyDraft > tolerates a space after the colon [line 86] (covered 28)
+    ✓ verifyDraft > tolerates a comma-separated list of ids in one marker [line 91] (killed 5)
+    ✓ stripSentencesCiting > drops only sentences citing a failed id, keeping the rest [line 103] (killed 5)
+    ✓ stripSentencesCiting > drops a sentence whose marker lists a failed id alongside a valid one [line 108] (killed 1)
+    ~ stripSentencesCiting > returns the body unchanged when there are no failed ids [line 113] (covered 4)
+    ✓ replaceCites > passes the split id list to the renderer for a comma marker [line 120] (killed 2)
+
+[NoCoverage] StringLiteral
+lib/agent/deadlines.ts:56:87
+-     return { step: "insurer_gro", addressee: `Grievance Redressal Officer, ${insurer ?? "the insurer"}` };
++     return { step: "insurer_gro", addressee: `Grievance Redressal Officer, ${insurer ?? ""}` };
+
+[NoCoverage] StringLiteral
+lib/agent/deadlines.ts:103:39
+-       source_url: SOURCES[f.rule_id] ?? "",
++       source_url: SOURCES[f.rule_id] ?? "Stryker was here!",
+
+[Survived] ConditionalExpression
+lib/agent/deadlines.ts:79:7
+-     if (claimAmountInr != null && claimAmountInr > OMBUDSMAN_CAP_INR) {
++     if (true && claimAmountInr > OMBUDSMAN_CAP_INR) {
+Tests ran:
+    POST /api/cases/[id]/approve > approves a case in AWAITING_APPROVAL and schedules follow-ups
+    scheduleFollowups > adds 14 days for the Bima Bharosa escalation
+    scheduleFollowups > adds 1 calendar month for Ombudsman eligibility
+  and 9 more tests!
+
+
+[Survived] ObjectLiteral
+lib/agent/deadlines.ts:93:42
+-     const labels: Record<string, string> = {
+-       ESCALATE_BIMA_BHAROSA: "Escalate to IRDAI Bima Bharosa if unresolved",
+-       OMBUDSMAN_ELIGIBLE: "Eligible to file with the Insurance Ombudsman",
+-       OMBUDSMAN_LAST_DATE: "Last date to file with the Insurance Ombudsman",
+-       OMBUDSMAN_INELIGIBLE_CAP: "Ombudsman route not available (claim exceeds ₹50 lakh cap)",
+-     };
++     const labels: Record<string, string> = {};
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] StringLiteral
+lib/agent/deadlines.ts:94:28
+-       ESCALATE_BIMA_BHAROSA: "Escalate to IRDAI Bima Bharosa if unresolved",
++       ESCALATE_BIMA_BHAROSA: "",
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] StringLiteral
+lib/agent/deadlines.ts:95:25
+-       OMBUDSMAN_ELIGIBLE: "Eligible to file with the Insurance Ombudsman",
++       OMBUDSMAN_ELIGIBLE: "",
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] StringLiteral
+lib/agent/deadlines.ts:97:31
+-       OMBUDSMAN_INELIGIBLE_CAP: "Ombudsman route not available (claim exceeds ₹50 lakh cap)",
++       OMBUDSMAN_INELIGIBLE_CAP: "",
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] StringLiteral
+lib/agent/deadlines.ts:96:26
+-       OMBUDSMAN_LAST_DATE: "Last date to file with the Insurance Ombudsman",
++       OMBUDSMAN_LAST_DATE: "",
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] LogicalOperator
+lib/agent/deadlines.ts:100:12
+-       label: labels[f.action] ?? f.action,
++       label: labels[f.action] && f.action,
+Tests ran:
+    deadlinesForUi > every deadline's rule_id exists in the regulations seed data
+
+
+[Survived] ConditionalExpression
+lib/agent/deadlines.ts:108:10
+-     return claimAmountInr == null || claimAmountInr <= OMBUDSMAN_CAP_INR;
++     return false || claimAmountInr <= OMBUDSMAN_CAP_INR;
+Tests ran:
+    isOmbudsmanEligibleByAmount > is eligible when amount is null (unknown)
+    isOmbudsmanEligibleByAmount > is eligible at exactly the cap
+    isOmbudsmanEligibleByAmount > is ineligible above the cap
+
+
+[Survived] StringLiteral
+lib/agent/deadlines.ts:7:17
+-     BIMA_BHAROSA: "https://telanganatoday.com/policyholders-can-approach-irdai-for-unresolved-insurance-complaints",
++     BIMA_BHAROSA: "",
+Ran all tests for this mutant.
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:491:8
+-     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
++     if ((c1.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 83 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:491:32
+-     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
++     if ((c1?.answer === "yes" && c2.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 29 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:491:56
+-     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
++     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3.answer === "no") || c4?.answer === "yes") {
+Tests ran:
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=yes
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=no
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=unknown
+  and 6 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:491:80
+-     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4?.answer === "yes") {
++     if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "no") || c4.answer === "yes") {
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 80 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:494:7
+-     if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes") return "STRONG";
++     if (c1.answer === "no" || c2?.answer === "no" || c3?.answer === "yes") return "STRONG";
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 54 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:494:30
+-     if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes") return "STRONG";
++     if (c1?.answer === "no" || c2.answer === "no" || c3?.answer === "yes") return "STRONG";
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 36 more tests!
+
+
+[Survived] OptionalChaining
+lib/agent/machine.ts:494:53
+-     if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes") return "STRONG";
++     if (c1?.answer === "no" || c2?.answer === "no" || c3.answer === "yes") return "STRONG";
+Tests ran:
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=no
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=yes C4=unknown
+    decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combinations) > C1=yes C2=yes C3=unknown C4=no
+  and 19 more tests!
+
+
+[NoCoverage] ObjectLiteral
+lib/agent/verify.ts:19:34
+-     if (qNorm.length === 0) return { ok: false, score: 0 };
++     if (qNorm.length === 0) return {};
+
+[NoCoverage] BooleanLiteral
+lib/agent/verify.ts:19:40
+-     if (qNorm.length === 0) return { ok: false, score: 0 };
++     if (qNorm.length === 0) return { ok: true, score: 0 };
+
+[NoCoverage] ObjectLiteral
+lib/agent/verify.ts:100:23
+-       if (!page) return { short_id, ok: false, score: 0 };
++       if (!page) return {};
+
+[NoCoverage] BooleanLiteral
+lib/agent/verify.ts:100:39
+-       if (!page) return { short_id, ok: false, score: 0 };
++       if (!page) return { short_id, ok: true, score: 0 };
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:19:7
+-     if (qNorm.length === 0) return { ok: false, score: 0 };
++     if (false) return { ok: false, score: 0 };
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a random verbatim span from the real policy always matches with score 1
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+  and 15 more tests!
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:24:7
+-     if (qWords.length < SHORT_QUOTE_WORDS) return { ok: false, score: 0 };
++     if (false) return { ok: false, score: 0 };
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 5 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:32:29
+-     for (let winLen = minLen; winLen <= maxLen; winLen++) {
++     for (let winLen = minLen; winLen < maxLen; winLen++) {
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:33:25
+-       for (let start = 0; start + winLen <= pageWords.length; start++) {
++       for (let start = 0; start + winLen < pageWords.length; start++) {
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] MethodExpression
+lib/agent/verify.ts:28:18
+-     const minLen = Math.max(1, Math.floor(qLen * 0.85));
++     const minLen = Math.min(1, Math.floor(qLen * 0.85));
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] ArithmeticOperator
+lib/agent/verify.ts:33:25
+-       for (let start = 0; start + winLen <= pageWords.length; start++) {
++       for (let start = 0; start - winLen <= pageWords.length; start++) {
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] MethodExpression
+lib/agent/verify.ts:35:25
+-         const maxStrLen = Math.max(qNorm.length, winStr.length);
++         const maxStrLen = Math.min(qNorm.length, winStr.length);
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:36:11
+-         if (maxStrLen === 0) continue;
++         if (false) continue;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:39:11
+-         if (score > best) best = score;
++         if (score >= best) best = score;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:40:11
+-         if (best >= 1) break;
++         if (false) break;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:40:11
+-         if (best >= 1) break;
++         if (best > 1) break;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:42:9
+-       if (best >= 1) break;
++       if (false) break;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:42:9
+-       if (best >= 1) break;
++       if (best > 1) break;
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] EqualityOperator
+lib/agent/verify.ts:45:16
+-     return { ok: best >= OK_THRESHOLD, score: best };
++     return { ok: best > OK_THRESHOLD, score: best };
+Tests ran:
+    matchQuote property tests (against the real samples/policy.pdf) > a 40+ char quote with 1-2 character edits still matches at >= 0.92
+    matchQuote property tests (against the real samples/policy.pdf) > random text not in the policy does not match
+    state machine integration (mocked LLM + in-memory DB, fully offline) > refuses to draft a letter when no evidence quote could be verified
+  and 4 more tests!
+
+
+[Survived] MethodExpression
+lib/agent/verify.ts:59:10
+-     return idList
+-       .split(",")
+-       .map((id) => id.trim())
+-       .filter(Boolean);
++     return idList.split(",").map(id => id.trim());
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > keeps stripped citations recorded as failed, not silently ok
+  and 10 more tests!
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:75:7
+-     if (!failedIds.length) return bodyMd;
++     if (false) return bodyMd;
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > keeps stripped citations recorded as failed, not silently ok
+    stripSentencesCiting > drops only sentences citing a failed id, keeping the rest
+    stripSentencesCiting > drops a sentence whose marker lists a failed id alongside a valid one
+  and 1 more test!
+
+
+[Survived] Regex
+lib/agent/verify.ts:77:34
+-     const sentences = bodyMd.split(/(?<=[.!?])\s+/);
++     const sentences = bodyMd.split(/(?<=[.!?])\s/);
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > keeps stripped citations recorded as failed, not silently ok
+    stripSentencesCiting > drops only sentences citing a failed id, keeping the rest
+    stripSentencesCiting > drops a sentence whose marker lists a failed id alongside a valid one
+
+
+[Survived] ConditionalExpression
+lib/agent/verify.ts:100:9
+-       if (!page) return { short_id, ok: false, score: 0 };
++       if (false) return { short_id, ok: false, score: 0 };
+Tests ran:
+    state machine integration (mocked LLM + in-memory DB, fully offline) > runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft
+    state machine integration (mocked LLM + in-memory DB, fully offline) > re-assesses after the user answers without duplicating evidence ids
+    state machine integration (mocked LLM + in-memory DB, fully offline) > keeps stripped citations recorded as failed, not silently ok
+  and 4 more tests!
+
+
+[Survived] Regex
+lib/agent/verify.ts:56:24
+-   export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g;
++   export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\S*,\s*[A-Za-z0-9_]+)*)\]/g;
+Ran all tests for this mutant.
+
+[Survived] Regex
+lib/agent/verify.ts:56:24
+-   export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)\]/g;
++   export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s[A-Za-z0-9_]+)*)\]/g;
+Ran all tests for this mutant.
+
+Ran 9.71 tests per mutant on average.
+--------------|------------------|----------|-----------|------------|----------|----------|
+              | % Mutation score |          |           |            |          |          |
+File          |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+--------------|--------|---------|----------|-----------|------------|----------|----------|
+All files     |  82.57 |   84.68 |      197 |         2 |         36 |        6 |        0 |
+ deadlines.ts |  85.90 |   88.16 |       67 |         0 |          9 |        2 |        0 |
+ machine.ts   |  87.04 |   87.04 |       47 |         0 |          7 |        0 |        0 |
+ verify.ts    |  77.98 |   80.95 |       83 |         2 |         20 |        4 |        0 |
+--------------|--------|---------|----------|-----------|------------|----------|----------|
+12:21:19 (2434) INFO JsonReporter Your report can be found at: file:///tmp/claude-0/-home-user-Agentic-AI-hack-ClaimPilot/58aeddfb-02a6-5a46-ac5b-1b2fb9901560/scratchpad/fresh/stryker-report.json
+12:21:19 (2434) INFO MutationTestExecutor Done in 1 minute and 36 seconds.

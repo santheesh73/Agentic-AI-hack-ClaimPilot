@@ -1,0 +1,32 @@
+Unused files (8)
+audit/repro/make_hindi_pdf.cjs
+audit/repro/ui_walkthrough.cjs
+audit/tests/stub-server-only.ts
+audit/vitest.audit.config.ts
+components/ui/scroll-area.tsx
+components/ui/tabs.tsx
+scripts/prove-local.mjs
+tests/stubs/server-only.ts
+Unused dependencies (1)
+package.json: @radix-ui/react-scroll-area, @radix-ui/react-tabs
+Unused devDependencies (1)
+package.json: @tailwindcss/turbopack, @vitejs/plugin-react
+Unused exports (9)
+components/ui/badge.tsx: badgeVariants
+components/ui/button.tsx: buttonVariants
+components/ui/card.tsx: CardFooter, CardAction, CardDescription
+components/ui/dialog.tsx: DialogClose, DialogOverlay, DialogPortal, DialogTrigger
+lib/agent/machine.ts: STATES, PAUSE_STATES, TERMINAL_STATES, getCase, runDontAppeal
+lib/agent/schemas.ts: CheckId
+lib/agent/verify.ts: CITE_RE
+lib/models.ts: PROMPT_VERSION, LLM_PROVIDER
+lib/rateLimit.ts: RATE_LIMITS
+Unused exported types (8)
+lib/agent/deadlines.ts: Deadline, Route
+lib/agent/machine.ts: CaseState, CaseRow
+lib/agent/tools/searchPolicy.ts: SearchedPage
+lib/agent/verify.ts: MatchResult
+lib/env.ts: Env
+lib/ingest/pdf.ts: ParsedPage
+lib/models.ts: LlmProvider
+lib/rateLimit.ts: RateLimitBucket

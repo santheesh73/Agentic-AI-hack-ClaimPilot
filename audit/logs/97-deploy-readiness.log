@@ -1,0 +1,74 @@
+== localhost/127.0.0.1 in app/lib/components
+none
+== NODE_ENV branches
+lib/db.ts:29:    secure: process.env.NODE_ENV === "production",
+== maxDuration per route
+app/api/cases/route.ts:6 maxDuration = 60;
+app/api/cases/[id]/route.ts:7 maxDuration = 60;
+app/api/cases/[id]/simulate/route.ts:11 maxDuration = 60;
+app/api/cases/[id]/approve/route.ts:6 maxDuration = 60;
+app/api/cases/[id]/answer/route.ts:6 maxDuration = 60;
+app/api/cases/[id]/step/route.ts:8 maxDuration = 60;
+app/api/cases/[id]/documents/route.ts:16 maxDuration = 60;
+app/api/cases/sample/route.ts:10 maxDuration = 60;
+app/api/health/route.ts:5 maxDuration = 10;
+== .nvmrc / engines / @types/node
+22
+6:    "node": ">=22.0.0"
+50:    "@types/node": "^20",
+== CI workflow
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # Fully offline and deterministic: mocked LLM + in-memory DB
+      # (see tests/helpers/fakeSupabase.ts). No secrets required.
+      - name: Test (mocked LLM, offline) with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+      # Build also runs Next's own TypeScript check against generated route
+      # types, so it's a second, independent typecheck pass -- not redundant.
+      - name: Build
+        run: pnpm build
+== eval workflow trigger
+4:# project and costs real tokens/money. Never runs on push or a schedule.
+5:on:
+6:  workflow_dispatch:
+9:        description: "Provider to eval (anthropic|google)"
+19:    runs-on: ubuntu-latest
+== Gemini mentioned in AI_DISCLOSURE
+0
+== TODO placeholders in docs
+docs/AI_DISCLOSURE.md:17:<!-- TODO: author — edit/expand this section with specifics once you've reviewed the final co

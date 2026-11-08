@@ -4,7 +4,7 @@
     "provider_calls": 1,
     "failure_events_logged": 0,
     "logged_status": [],
-    "ms": 21,
+    "ms": 22,
     "result": "returned {\"verdict\":\"A\",\"n\":1}"
   },
   {
@@ -23,7 +23,7 @@
       "n/a",
       "n/a"
     ],
-    "ms": 4,
+    "ms": 5,
     "result": "threw AI_NoObjectGeneratedError: No object generated: could not parse the response."
   },
   {
@@ -34,7 +34,7 @@
       "n/a",
       "n/a"
     ],
-    "ms": 3,
+    "ms": 8,
     "result": "threw AI_NoObjectGeneratedError: No object generated: could not parse the response."
   },
   {
@@ -56,7 +56,7 @@
       "n/a",
       "n/a"
     ],
-    "ms": 4,
+    "ms": 5,
     "result": "threw TimeoutError: The operation was aborted due to timeout"
   },
   {
@@ -67,7 +67,7 @@
       "n/a",
       "n/a"
     ],
-    "ms": 12016,
+    "ms": 12011,
     "result": "threw AI_RetryError: Failed after 3 attempts. Last error: AI_APICallError: HTTP 429"
   },
   {
@@ -78,7 +78,7 @@
       "n/a",
       "n/a"
     ],
-    "ms": 12019,
+    "ms": 12018,
     "result": "threw AI_RetryError: Failed after 3 attempts. Last error: AI_APICallError: HTTP 503"
   },
   {
@@ -89,7 +89,7 @@
       "401",
       "401"
     ],
-    "ms": 4,
+    "ms": 3,
     "result": "threw AI_APICallError: HTTP 401"
   }
 ]

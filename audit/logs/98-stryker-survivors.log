@@ -1,0 +1,42 @@
+NoCoverage lib/agent/deadlines.ts:56 StringLiteral          -> '""'   | return { step: "insurer_gro", addressee: `Grievance Redressal Officer,
+NoCoverage lib/agent/deadlines.ts:103 StringLiteral          -> '"Stryker was here!"'   | source_url: SOURCES[f.rule_id] ?? "",
+Survived   lib/agent/deadlines.ts:79 ConditionalExpression  -> 'true'   | if (claimAmountInr != null && claimAmountInr > OMBUDSMAN_CAP_INR) {
+Survived   lib/agent/deadlines.ts:93 ObjectLiteral          -> '{}'   | const labels: Record<string, string> = {
+Survived   lib/agent/deadlines.ts:94 StringLiteral          -> '""'   | ESCALATE_BIMA_BHAROSA: "Escalate to IRDAI Bima Bharosa if unresolved",
+Survived   lib/agent/deadlines.ts:95 StringLiteral          -> '""'   | OMBUDSMAN_ELIGIBLE: "Eligible to file with the Insurance Ombudsman",
+Survived   lib/agent/deadlines.ts:97 StringLiteral          -> '""'   | OMBUDSMAN_INELIGIBLE_CAP: "Ombudsman route not available (claim exceed
+Survived   lib/agent/deadlines.ts:96 StringLiteral          -> '""'   | OMBUDSMAN_LAST_DATE: "Last date to file with the Insurance Ombudsman",
+Survived   lib/agent/deadlines.ts:100 LogicalOperator        -> 'labels[f.action] && f.action'   | label: labels[f.action] ?? f.action,
+Survived   lib/agent/deadlines.ts:108 ConditionalExpression  -> 'false'   | return claimAmountInr == null || claimAmountInr <= OMBUDSMAN_CAP_INR;
+Survived   lib/agent/deadlines.ts:7 StringLiteral          -> '""'   | BIMA_BHAROSA: "https://telanganatoday.com/policyholders-can-approach-i
+NoCoverage lib/agent/verify.ts:19 ObjectLiteral          -> '{}'   | if (qNorm.length === 0) return { ok: false, score: 0 };
+NoCoverage lib/agent/verify.ts:19 BooleanLiteral         -> 'true'   | if (qNorm.length === 0) return { ok: false, score: 0 };
+NoCoverage lib/agent/verify.ts:100 ObjectLiteral          -> '{}'   | if (!page) return { short_id, ok: false, score: 0 };
+NoCoverage lib/agent/verify.ts:100 BooleanLiteral         -> 'true'   | if (!page) return { short_id, ok: false, score: 0 };
+Survived   lib/agent/verify.ts:19 ConditionalExpression  -> 'false'   | if (qNorm.length === 0) return { ok: false, score: 0 };
+Survived   lib/agent/verify.ts:24 ConditionalExpression  -> 'false'   | if (qWords.length < SHORT_QUOTE_WORDS) return { ok: false, score: 0 };
+Survived   lib/agent/verify.ts:32 EqualityOperator       -> 'winLen < maxLen'   | for (let winLen = minLen; winLen <= maxLen; winLen++) {
+Survived   lib/agent/verify.ts:33 EqualityOperator       -> 'start + winLen < pageWords.length'   | for (let start = 0; start + winLen <= pageWords.length; start++) {
+Survived   lib/agent/verify.ts:28 MethodExpression       -> 'Math.min(1, Math.floor(qLen * 0.85))'   | const minLen = Math.max(1, Math.floor(qLen * 0.85));
+Survived   lib/agent/verify.ts:33 ArithmeticOperator     -> 'start - winLen'   | for (let start = 0; start + winLen <= pageWords.length; start++) {
+Survived   lib/agent/verify.ts:35 MethodExpression       -> 'Math.min(qNorm.length, winStr.length)'   | const maxStrLen = Math.max(qNorm.length, winStr.length);
+Survived   lib/agent/verify.ts:36 ConditionalExpression  -> 'false'   | if (maxStrLen === 0) continue;
+Survived   lib/agent/verify.ts:39 EqualityOperator       -> 'score >= best'   | if (score > best) best = score;
+Survived   lib/agent/verify.ts:40 ConditionalExpression  -> 'false'   | if (best >= 1) break;
+Survived   lib/agent/verify.ts:40 EqualityOperator       -> 'best > 1'   | if (best >= 1) break;
+Survived   lib/agent/verify.ts:42 ConditionalExpression  -> 'false'   | if (best >= 1) break;
+Survived   lib/agent/verify.ts:42 EqualityOperator       -> 'best > 1'   | if (best >= 1) break;
+Survived   lib/agent/verify.ts:45 EqualityOperator       -> 'best > OK_THRESHOLD'   | return { ok: best >= OK_THRESHOLD, score: best };
+Survived   lib/agent/verify.ts:59 MethodExpression       -> 'idList.split(",").map(id => id.trim())'   | return idList
+Survived   lib/agent/verify.ts:75 ConditionalExpression  -> 'false'   | if (!failedIds.length) return bodyMd;
+Survived   lib/agent/verify.ts:77 Regex                  -> '/(?<=[.!?])\\s/'   | const sentences = bodyMd.split(/(?<=[.!?])\s+/);
+Survived   lib/agent/verify.ts:100 ConditionalExpression  -> 'false'   | if (!page) return { short_id, ok: false, score: 0 };
+Survived   lib/agent/verify.ts:56 Regex                  -> '/\\[cite:\\s*([A-Za-z0-9_]+(?:\\S*,\\s*[A-Za-z0-9_]+)*'   | export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]
+Survived   lib/agent/verify.ts:56 Regex                  -> '/\\[cite:\\s*([A-Za-z0-9_]+(?:\\s*,\\s[A-Za-z0-9_]+)*)'   | export const CITE_RE = /\[cite:\s*([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]
+Survived   lib/agent/machine.ts:491 OptionalChaining       -> 'c1.answer'   | if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "n
+Survived   lib/agent/machine.ts:491 OptionalChaining       -> 'c2.answer'   | if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "n
+Survived   lib/agent/machine.ts:491 OptionalChaining       -> 'c3.answer'   | if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "n
+Survived   lib/agent/machine.ts:491 OptionalChaining       -> 'c4.answer'   | if ((c1?.answer === "yes" && c2?.answer === "yes" && c3?.answer === "n
+Survived   lib/agent/machine.ts:494 OptionalChaining       -> 'c1.answer'   | if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes"
+Survived   lib/agent/machine.ts:494 OptionalChaining       -> 'c2.answer'   | if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes"
+Survived   lib/agent/machine.ts:494 OptionalChaining       -> 'c3.answer'   | if (c1?.answer === "no" || c2?.answer === "no" || c3?.answer === "yes"

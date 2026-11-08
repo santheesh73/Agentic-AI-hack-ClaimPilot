@@ -1,0 +1,32 @@
+== ': any' / '<any>' / 'as any'
+== '@ts-ignore|@ts-expect-error|eslint-disable'
+== 'as X' casts (count per file)
+lib/agent/machine.ts:716
+app/cases/[id]/page.tsx:325
+lib/models.ts:196
+evals/run.ts:169
+app/page.tsx:154
+scripts/update-readme-evals.ts:145
+components/ui/dialog.tsx:141
+app/api/cases/[id]/documents/route.ts:127
+lib/agent/deadlines.ts:109
+lib/agent/verify.ts:104
+== non-null assertions x! (count per file)
+== console.*
+app/error.tsx:15:    console.error(error);
+== empty/swallowing catch
+app/api/cases/[id]/documents/route.ts:72:      } catch {
+app/api/cases/sample/route.ts:46:    } catch {
+app/api/health/route.ts:13:  } catch {
+app/api/health/route.ts:31:  } catch {
+lib/validation.ts:31:  } catch {
+lib/agent/machine.ts:172:    } catch {
+== awaited db writes whose error is ignored (await db.from(...).update/insert without destructuring error)
+app/api/cases/[id]/route.ts:57:      await db.storage.from(DOCUMENTS_BUCKET).remove(storagePaths);
+app/api/cases/[id]/simulate/route.ts:30:  await db.from("cases").update({ sim_offset_days: newOffset }).eq("id", id);
+app/api/cases/[id]/simulate/route.ts:71:    await db.from("followups").update({ status: "fired", output_md: outputMd }).eq("id", fu.id);
+lib/models.ts:183:  await db.from("agent_events").insert({
+lib/agent/machine.ts:135:  await db.from("cases").update({ step_lock_until: null }).eq("id", caseId);
+lib/agent/machine.ts:614:    await db.from("drafts").update({ verification: results }).eq("id", draft!.id);
+lib/agent/machine.ts:674:  await db.from("drafts").update({ redteam: cleanedRedteam }).eq("id", draft!.id);
+lib/agent/machine.ts:710:    await db.from("drafts").update({ approved_at: new Date().toISOString() }).eq("id", latestDraft.id);

@@ -124,7 +124,7 @@
   },
   "perf": {
     "largest_page_chars": 2099,
-    "ms_per_call": 236.9,
-    "synthetic_50k_chars_ms": 6453.8
+    "ms_per_call": 237.6,
+    "synthetic_50k_chars_ms": 6553.4
   }
 }
