@@ -81,4 +81,20 @@ The provider is configurable: `LLM_PROVIDER=anthropic|google`, defaulting to `go
 
 ## Security model
 
-All Supabase access happens server-side with the service role key; no client ever sees it. Each browser is assigned a random owner id in an httpOnly cookie (`cp_owner`); every query filters on `owner_id`, and RLS is enabled on every table with no client-facing policies (the anon key can read nothing).
+All Supabase access happens server-side with the service role key; no client ever sees it. Each browser is assigned a random owner id in an httpOnly cookie (`cp_owner`); every query filters on `owner_id`, and RLS is enabled on every table with no client-facing policies (the anon key can read nothing). A request for a case id that exists but belongs to a different owner returns 404, not 403 or any other status that would confirm the id is real.
+
+## Input validation and error contract
+
+Every route validates its input with Zod (`lib/validation.ts`) and returns a consistent `{error:{code,message}}` shape (`ApiError`/`errorResponse`), never a bare string. Concrete limits enforced: claim amount positive and ≤10 crore, pasted letter text ≤20,000 characters, uploaded file ≤15MB and ≤200 pages, PDF sniffed by magic bytes (not just extension/MIME) with 415 for a non-PDF file and 422 for an image-only (scanned) one.
+
+## Concurrency: the step lock
+
+`POST /api/cases/[id]/step` claims a 60-second lease (`cases.step_lock_until`) via an atomic `UPDATE ... WHERE step_lock_until IS NULL OR step_lock_until < now()` before running a state transition, and releases it in a `finally` block. A concurrent call while a lease is held returns 409 with the case's current state, so a double-click or two open tabs can never run the same transition twice. See `lib/agent/machine.ts`'s `claimStepLock`/`releaseStepLock`/`StepLockedError`.
+
+## Boot-time configuration
+
+`lib/env.ts` validates every environment variable with Zod at first use (not eagerly at module load, to avoid breaking `next build` in an environment without secrets configured), throwing one readable error listing every problem rather than failing on whichever var happens to be read first. `GET /api/health` surfaces `{ok, provider, db, storage, version}` without ever echoing which specific vars are missing.
+
+## Testing approach (see also `docs/KNOWN_ISSUES.md` and the README's Testing Strategy section)
+
+The two genuine I/O boundaries — the LLM (`lib/models.ts#generate`) and the database (`lib/db.ts#supabaseAdmin`) — are the only things mocked in the integration and route-handler tests. `tests/helpers/fakeSupabase.ts` is an in-memory stand-in for the subset of the Supabase client this codebase actually uses (not a full PostgREST reimplementation — in particular its `search_pages` RPC stand-in does simple keyword-overlap scoring, not real `ts_rank_cd` full-text ranking, which is covered separately by the live-DB verification recorded in `docs/AUDIT.md`). Everything else in the pipeline — the real state machine, the real citation verifier, the real deadline engine, the real Zod validation — runs unmocked against that fake, which is what lets `pnpm test` prove the agent's actual behavior offline and deterministically instead of only asserting against mocks of the logic under test.
