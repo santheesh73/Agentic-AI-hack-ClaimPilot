@@ -1,0 +1,51 @@
+name: Eval (live accuracy run)
+
+# Manual only -- this calls the real model provider and the real Supabase
+# project and costs real tokens/money. Never runs on push or a schedule.
+on:
+  workflow_dispatch:
+    inputs:
+      llm_provider:
+        description: "Provider to eval (anthropic|google)"
+        required: false
+        default: "google"
+        type: choice
+        options:
+          - google
+          - anthropic
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    environment: eval # requires manual approval if configured as a protected environment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run eval suite against the live provider and database
+        env:
+          LLM_PROVIDER: ${{ github.event.inputs.llm_provider }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MODEL_FAST: ${{ vars.MODEL_FAST }}
+          MODEL_STRONG: ${{ vars.MODEL_STRONG }}
+        run: tsx evals/run.ts
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ github.event.inputs.llm_provider }}
+          path: evals/results/
+          retention-days: 90

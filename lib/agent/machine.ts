@@ -11,7 +11,7 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote, extractCites } from "./verify";
+import { matchQuote, stripSentencesCiting } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
@@ -93,8 +93,54 @@ async function stepCount(caseId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Runs exactly one state transition for the case and persists the result. */
+const STEP_LOCK_LEASE_MS = 60_000;
+
+/** Atomically claims the step lock: succeeds only if no lease is held, or the
+ * previous lease has expired. Prevents a double-click or two open tabs from
+ * running the same state transition concurrently. */
+async function claimStepLock(caseId: string): Promise<boolean> {
+  const db = supabaseAdmin();
+  const now = new Date();
+  const leaseUntil = new Date(now.getTime() + STEP_LOCK_LEASE_MS).toISOString();
+  const { data, error } = await db
+    .from("cases")
+    .update({ step_lock_until: leaseUntil })
+    .eq("id", caseId)
+    .or(`step_lock_until.is.null,step_lock_until.lt.${now.toISOString()}`)
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+async function releaseStepLock(caseId: string): Promise<void> {
+  const db = supabaseAdmin();
+  await db.from("cases").update({ step_lock_until: null }).eq("id", caseId);
+}
+
+export class StepLockedError extends Error {
+  constructor(public state: CaseState) {
+    super("Another /step call is already in progress for this case.");
+  }
+}
+
+/** Runs exactly one state transition for the case and persists the result.
+ * Throws StepLockedError (callers should surface this as 409) if a step is
+ * already in progress for this case. */
 export async function runStep(caseId: string): Promise<{ state: CaseState; error?: string }> {
+  const claimed = await claimStepLock(caseId);
+  if (!claimed) {
+    const current = await getCase(caseId);
+    throw new StepLockedError(current.state);
+  }
+
+  try {
+    return await runStepLocked(caseId);
+  } finally {
+    await releaseStepLock(caseId);
+  }
+}
+
+async function runStepLocked(caseId: string): Promise<{ state: CaseState; error?: string }> {
   const c = await getCase(caseId);
 
   const alreadyDone = c.state === "DONT_APPEAL" && c.dont_appeal_reason != null;
@@ -305,7 +351,7 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
   const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
-  const needsUser = (c5?.answer === "unknown" || c5?.answer === "no") && unresolvedMissing.length > 0;
+  const needsUser = needsUserInput(c5?.answer, unresolvedMissing.length > 0);
 
   const nextState: CaseState = needsUser ? "AWAITING_USER" : "DECIDE";
 
@@ -325,6 +371,14 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   });
 
   return { state: nextState };
+}
+
+/** Whether the case should pause for AWAITING_USER rather than proceed to
+ * DECIDE: the model couldn't confirm the facts it needs (C5 "unknown" or
+ * "no" -- both mean "not known"), and there's at least one unanswered
+ * missing-fact question. */
+export function needsUserInput(c5Answer: Check["answer"] | undefined, hasUnresolvedMissingFacts: boolean): boolean {
+  return (c5Answer === "unknown" || c5Answer === "no") && hasUnresolvedMissingFacts;
 }
 
 export function decideVerdict(rubric: Check[]): Verdict {
@@ -415,13 +469,6 @@ async function runDraft(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "VERIFY" };
 }
 
-function stripFailedSentences(bodyMd: string, failedIds: string[]): string {
-  if (!failedIds.length) return bodyMd;
-  const failedSet = new Set(failedIds);
-  const sentences = bodyMd.split(/(?<=[.!?])\s+/);
-  return sentences.filter((s) => !extractCites(s).some((id) => failedSet.has(id))).join(" ");
-}
-
 async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const { data: draft } = await db
@@ -466,7 +513,7 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     return { state: "DRAFT" };
   }
 
-  const cleaned = stripFailedSentences(draft!.body_md, failedIds);
+  const cleaned = stripSentencesCiting(draft!.body_md, failedIds);
   const cleanedResults = results.map((r) => (failedIds.includes(r.short_id) ? { ...r, ok: true, score: r.score } : r));
   await db
     .from("drafts")

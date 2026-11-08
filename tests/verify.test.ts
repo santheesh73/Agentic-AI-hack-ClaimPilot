@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalize, matchQuote, verifyDraft } from "../lib/agent/verify";
+import { normalize, matchQuote, verifyDraft, stripSentencesCiting, replaceCites } from "../lib/agent/verify";
 
 describe("normalize", () => {
   it("expands ligatures", () => {
@@ -96,5 +96,29 @@ describe("verifyDraft", () => {
     const results = verifyDraft("The clause applies. [cite: E1, E2]", evidence, pagesById);
     expect(results.map((r) => r.short_id).sort()).toEqual(["E1", "E2"]);
     expect(results.every((r) => r.ok)).toBe(true);
+  });
+});
+
+describe("stripSentencesCiting", () => {
+  it("drops only sentences citing a failed id, keeping the rest", () => {
+    const body = "First claim holds [cite:E1]. Second claim fails [cite:E2]. Third claim holds [cite:E1].";
+    expect(stripSentencesCiting(body, ["E2"])).toBe("First claim holds [cite:E1]. Third claim holds [cite:E1].");
+  });
+
+  it("drops a sentence whose marker lists a failed id alongside a valid one", () => {
+    const body = "Combined claim [cite: E1, E2]. Clean claim [cite:E1].";
+    expect(stripSentencesCiting(body, ["E2"])).toBe("Clean claim [cite:E1].");
+  });
+
+  it("returns the body unchanged when there are no failed ids", () => {
+    const body = "A sentence. [cite:E1]";
+    expect(stripSentencesCiting(body, [])).toBe(body);
+  });
+});
+
+describe("replaceCites", () => {
+  it("passes the split id list to the renderer for a comma marker", () => {
+    const rendered = replaceCites("Claim. [cite: E1, E2]", (ids) => `(${ids.join("+")})`);
+    expect(rendered).toBe("Claim. (E1+E2)");
   });
 });

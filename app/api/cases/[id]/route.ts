@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
 import { getOwnedCase } from "@/lib/ownership";
 import { deadlinesForUi } from "@/lib/agent/deadlines";
+import { errorResponse, notFoundResponse } from "@/lib/validation";
 
 export const maxDuration = 60;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const caseRow = await getOwnedCase(id);
-  if (!caseRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!caseRow) return notFoundResponse();
 
   const db = supabaseAdmin();
   const [{ data: events }, { data: evidence }, { data: drafts }, { data: followups }, { data: documents }] =
@@ -41,21 +42,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const caseRow = await getOwnedCase(id);
-  if (!caseRow) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    const { id } = await params;
+    const caseRow = await getOwnedCase(id);
+    if (!caseRow) return notFoundResponse();
 
-  const db = supabaseAdmin();
+    const db = supabaseAdmin();
 
-  const { data: documents } = await db.from("documents").select("storage_path").eq("case_id", id);
-  const storagePaths = (documents ?? []).map((d) => d.storage_path).filter((p): p is string => p != null);
-  if (storagePaths.length) {
-    // Best-effort: an orphaned storage object is a minor leak, not worth
-    // failing the delete over if Storage is briefly unavailable.
-    await db.storage.from(DOCUMENTS_BUCKET).remove(storagePaths);
+    const { data: documents } = await db.from("documents").select("storage_path").eq("case_id", id);
+    const storagePaths = (documents ?? []).map((d) => d.storage_path).filter((p): p is string => p != null);
+    if (storagePaths.length) {
+      // Best-effort: an orphaned storage object is a minor leak, not worth
+      // failing the delete over if Storage is briefly unavailable.
+      await db.storage.from(DOCUMENTS_BUCKET).remove(storagePaths);
+    }
+
+    const { error } = await db.from("cases").delete().eq("id", id);
+    if (error) throw error;
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return errorResponse(err);
   }
-
-  const { error } = await db.from("cases").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
 }

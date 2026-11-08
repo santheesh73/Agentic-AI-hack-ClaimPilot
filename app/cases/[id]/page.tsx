@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +10,13 @@ import { Separator } from "@/components/ui/separator";
 import { AskUserDialog } from "@/components/AskUserDialog";
 import { Deadlines, type DeadlineItem } from "@/components/Deadlines";
 import { RedTeamCard, type RedTeamData } from "@/components/RedTeamCard";
+import { Trace, type AgentEvent } from "@/components/Trace";
+import { RubricPanel, type Check } from "@/components/RubricPanel";
+import { Ledger, type Evidence } from "@/components/Ledger";
+import { DraftView } from "@/components/DraftView";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/apiError";
 
-type AgentEvent = { id: number; step: string; tool: string | null; model: string | null; summary: string | null; ms: number | null };
-type Check = { id: string; answer: "yes" | "no" | "unknown"; rationale: string; evidence_refs: string[] };
-type Evidence = { short_id: string; claim: string; quote: string; verified: boolean; match_score: number | null };
 type Draft = {
   id: string;
   version: number;
@@ -55,7 +56,14 @@ export default function CasePage() {
   const [running, setRunning] = useState(false);
   const [versionIdx, setVersionIdx] = useState<number | null>(null);
   const [revealCount, setRevealCount] = useState(0);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const runningRef = useRef(false);
+
+  const scrollToEvidence = useCallback((shortId: string) => {
+    setHighlightId(shortId);
+    document.getElementById(`evidence-${shortId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => setHighlightId((current) => (current === shortId ? null : current)), 2000);
+  }, []);
 
   const fetchCase = useCallback(async () => {
     const res = await fetch(`/api/cases/${id}`);
@@ -110,7 +118,7 @@ export default function CasePage() {
         body: JSON.stringify({ answers }),
       });
       if (!res.ok) {
-        toast.error((await res.json().catch(() => null))?.error ?? "Failed to submit answers.");
+        toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to submit answers."));
         return;
       }
       await runLoop();
@@ -121,7 +129,7 @@ export default function CasePage() {
   const approve = useCallback(async () => {
     const res = await fetch(`/api/cases/${id}/approve`, { method: "POST" });
     if (!res.ok) {
-      toast.error((await res.json().catch(() => null))?.error ?? "Failed to approve the case.");
+      toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to approve the case."));
       return;
     }
     toast.success("Complaint approved and sent.");
@@ -136,7 +144,7 @@ export default function CasePage() {
         body: JSON.stringify({ days }),
       });
       if (!res.ok) {
-        toast.error((await res.json().catch(() => null))?.error ?? "Simulation failed.");
+        toast.error(extractErrorMessage(await res.json().catch(() => null), "Simulation failed."));
         return;
       }
       const { fired } = await res.json();
@@ -150,7 +158,7 @@ export default function CasePage() {
     if (!confirm("Delete this case permanently?")) return;
     const res = await fetch(`/api/cases/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      toast.error((await res.json().catch(() => null))?.error ?? "Failed to delete the case.");
+      toast.error(extractErrorMessage(await res.json().catch(() => null), "Failed to delete the case."));
       return;
     }
     router.push("/");
@@ -253,18 +261,8 @@ export default function CasePage() {
           <CardHeader>
             <CardTitle className="text-sm">Trace</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
-            {(isReplay ? events.slice(0, revealCount) : events).map((e) => (
-              <div key={e.id} className="text-sm border-b pb-2">
-                <div className="flex gap-2 items-center">
-                  <Badge variant="secondary" className="text-[10px]">{e.step}</Badge>
-                  {e.model && <span className="text-xs text-muted-foreground">{e.model}</span>}
-                  {e.ms != null && <span className="text-xs text-muted-foreground">{e.ms}ms</span>}
-                </div>
-                {e.summary && <p className="mt-1">{e.summary}</p>}
-              </div>
-            ))}
-            {events.length === 0 && <p className="text-sm text-muted-foreground">No events yet. Click Run.</p>}
+          <CardContent className="max-h-[70vh] overflow-y-auto">
+            <Trace events={isReplay ? events.slice(0, revealCount) : events} />
           </CardContent>
         </Card>
 
@@ -273,30 +271,11 @@ export default function CasePage() {
             <CardTitle className="text-sm">Assessment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto">
-            {(c.rubric ?? []).map((check) => (
-              <div key={check.id} className="text-sm">
-                <div className="flex items-center gap-2">
-                  <Badge variant={check.answer === "yes" ? "default" : check.answer === "no" ? "destructive" : "outline"}>
-                    {check.answer}
-                  </Badge>
-                  <span className="font-medium">{check.id}</span>
-                </div>
-                <p className="text-muted-foreground mt-1">{check.rationale}</p>
-              </div>
-            ))}
+            <RubricPanel rubric={c.rubric ?? []} />
             <Separator />
             <div className="space-y-2">
               <p className="text-sm font-medium">Evidence ledger</p>
-              {evidence.map((e) => (
-                <div key={e.short_id} className="text-xs border rounded-md p-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{e.short_id}</span>
-                    <span>{e.verified ? "✓" : "✗"} {e.match_score?.toFixed(2)}</span>
-                  </div>
-                  <p className="text-muted-foreground">{e.claim}</p>
-                  <p className="italic mt-1">&ldquo;{e.quote}&rdquo;</p>
-                </div>
-              ))}
+              <Ledger evidence={evidence} highlightId={highlightId} />
             </div>
           </CardContent>
         </Card>
@@ -322,7 +301,7 @@ export default function CasePage() {
           <CardContent className="max-h-[70vh] overflow-y-auto prose prose-sm space-y-4">
             {shownDraft ? (
               <>
-                <ReactMarkdown>{shownDraft.body_md}</ReactMarkdown>
+                <DraftView bodyMd={shownDraft.body_md} onCiteClick={scrollToEvidence} />
                 {shownDraft.redteam && (
                   <RedTeamCard
                     redteam={shownDraft.redteam}

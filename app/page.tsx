@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { extractErrorMessage } from "@/lib/apiError";
 
 export default function Home() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function Home() {
         body: JSON.stringify({ sample }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load sample case");
+      if (!res.ok) throw new Error(extractErrorMessage(data, "Failed to load sample case"));
       router.push(`/cases/${data.id}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
@@ -53,21 +54,21 @@ export default function Home() {
         body: JSON.stringify({ title, insurer, claim_amount_inr: claimAmount ? Number(claimAmount) : null }),
       });
       const caseData = await caseRes.json();
-      if (!caseRes.ok) throw new Error(caseData.error ?? "Failed to create case");
+      if (!caseRes.ok) throw new Error(extractErrorMessage(caseData, "Failed to create case"));
       const id = caseData.id as string;
 
       const policyForm = new FormData();
       policyForm.set("kind", "policy");
       policyForm.set("file", policyFile);
       const policyRes = await fetch(`/api/cases/${id}/documents`, { method: "POST", body: policyForm });
-      if (!policyRes.ok) throw new Error((await policyRes.json()).error ?? "Policy upload failed");
+      if (!policyRes.ok) throw new Error(extractErrorMessage(await policyRes.json(), "Policy upload failed"));
 
       const rejectionForm = new FormData();
       rejectionForm.set("kind", "rejection");
       if (rejectionFile) rejectionForm.set("file", rejectionFile);
       else rejectionForm.set("text", rejectionText);
       const rejectionRes = await fetch(`/api/cases/${id}/documents`, { method: "POST", body: rejectionForm });
-      if (!rejectionRes.ok) throw new Error((await rejectionRes.json()).error ?? "Rejection upload failed");
+      if (!rejectionRes.ok) throw new Error(extractErrorMessage(await rejectionRes.json(), "Rejection upload failed"));
 
       router.push(`/cases/${id}`);
     } catch (e) {

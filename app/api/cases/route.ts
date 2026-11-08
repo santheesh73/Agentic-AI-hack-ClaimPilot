@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/db";
-import { getOrCreateOwnerId } from "@/lib/db";
+import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
+import { CreateCaseBody, parseJsonBody, errorResponse } from "@/lib/validation";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { title, insurer, claim_amount_inr } = body ?? {};
+  try {
+    const body = await parseJsonBody(req, CreateCaseBody);
 
-  const ownerId = await getOrCreateOwnerId();
-  const db = supabaseAdmin();
-  const { data, error } = await db
-    .from("cases")
-    .insert({
-      owner_id: ownerId,
-      title: title ?? null,
-      insurer: insurer ?? null,
-      claim_amount_inr: claim_amount_inr ?? null,
-      state: "INTAKE",
-    })
-    .select("id")
-    .single();
+    const ownerId = await getOrCreateOwnerId();
+    const db = supabaseAdmin();
+    const { data, error } = await db
+      .from("cases")
+      .insert({
+        owner_id: ownerId,
+        title: body.title ?? null,
+        insurer: body.insurer ?? null,
+        claim_amount_inr: body.claim_amount_inr ?? null,
+        state: "INTAKE",
+      })
+      .select("id")
+      .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ id: data.id });
+    if (error) return NextResponse.json({ error: { code: "db_error", message: error.message } }, { status: 500 });
+    return NextResponse.json({ id: data.id });
+  } catch (err) {
+    return errorResponse(err);
+  }
 }

@@ -2,15 +2,21 @@
   "name": "claimpilot",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "eval": "tsx --env-file=.env.local evals/run.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.98",
     "@ai-sdk/google": "^4.0.109",
     "@radix-ui/react-dialog": "^1.3.1",
     "@radix-ui/react-label": "^2.1.17",
@@ -44,12 +50,20 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "5.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "fast-check": "^4.10.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
   },
-  "packageManager": "pnpm@10.28.0"
+  "packageManager": "pnpm@10.28.0",
+  "pnpm": {
+    "overrides": {
+      "@ai-sdk/provider": "4.0.36",
+      "@ai-sdk/provider-utils": "5.0.75"
+    }
+  }
 }

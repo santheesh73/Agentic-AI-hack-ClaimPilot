@@ -127,6 +127,18 @@ async function main() {
   for (const r of results) {
     console.log(`${r.case} | ${r.expected} | ${r.got} | ${r.verifiedPct}% | ${r.steps} | ${r.ms} | ${r.tokens}`);
   }
+
+  const resultsDir = path.resolve(__dirname, "results");
+  fs.mkdirSync(resultsDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const provider = process.env.LLM_PROVIDER ?? "google";
+  const model = process.env.MODEL_STRONG ?? "(default)";
+  const outPath = path.join(resultsDir, `${timestamp}-${provider}-${model}.json`);
+  fs.writeFileSync(
+    outPath,
+    JSON.stringify({ ranAt: new Date().toISOString(), provider, model_fast: process.env.MODEL_FAST, model_strong: model, results }, null, 2)
+  );
+  console.log(`\nWrote ${outPath}`);
 }
 
 main().then(() => process.exit(0)).catch((err) => {

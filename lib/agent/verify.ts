@@ -70,6 +70,14 @@ export function extractCites(bodyMd: string): string[] {
   return [...ids];
 }
 
+/** Drops every sentence that cites at least one of the given failed ids. */
+export function stripSentencesCiting(bodyMd: string, failedIds: string[]): string {
+  if (!failedIds.length) return bodyMd;
+  const failedSet = new Set(failedIds);
+  const sentences = bodyMd.split(/(?<=[.!?])\s+/);
+  return sentences.filter((s) => !extractCites(s).some((id) => failedSet.has(id))).join(" ");
+}
+
 /** Replaces every [cite:...] marker (single or comma-list) with `render(ids)`. */
 export function replaceCites(bodyMd: string, render: (ids: string[]) => string): string {
   return bodyMd.replace(CITE_RE, (_match, idList: string) => render(splitCiteIds(idList)));
