@@ -53,18 +53,38 @@ describe("decideVerdict: exhaustive truth table over C1-C4 (3^4 = 81 combination
   }
 });
 
-describe("needsUserInput: exhaustive over C5 x missing-facts presence (3*2 = 6 combinations)", () => {
-  const cases: Array<[Answer, boolean, boolean]> = [
-    ["yes", false, false],
-    ["yes", true, false],
-    ["no", false, false],
-    ["no", true, true],
-    ["unknown", false, false],
-    ["unknown", true, true],
-  ];
-  for (const [c5, hasMissing, expected] of cases) {
-    it(`C5=${c5}, hasUnresolvedMissingFacts=${hasMissing} -> ${expected}`, () => {
-      expect(needsUserInput(c5, hasMissing)).toBe(expected);
-    });
+describe("needsUserInput: exhaustive over provisional verdict x C5 x missing facts (3*3*2 = 18)", () => {
+  // Independent reference (audit F-005): ask only when an answer could change
+  // the outcome -- ARGUABLE always, WEAK unless the facts are known, never STRONG.
+  function reference(verdict: "STRONG" | "ARGUABLE" | "WEAK", c5: Answer, hasMissing: boolean): boolean {
+    if (!hasMissing) return false;
+    if (verdict === "STRONG") return false;
+    if (verdict === "ARGUABLE") return true;
+    return c5 !== "yes";
   }
+  for (const verdict of ["STRONG", "ARGUABLE", "WEAK"] as const) {
+    for (const c5 of ANSWERS) {
+      for (const hasMissing of [false, true]) {
+        it(`verdict=${verdict} C5=${c5} missing=${hasMissing} -> ${reference(verdict, c5, hasMissing)}`, () => {
+          expect(needsUserInput(verdict, c5, hasMissing)).toBe(reference(verdict, c5, hasMissing));
+        });
+      }
+    }
+  }
+
+  it("never asks when the verdict is already STRONG, even with unknown facts", () => {
+    expect(needsUserInput("STRONG", "unknown", true)).toBe(false);
+  });
+  it("asks for an ARGUABLE case even when the model says facts are known", () => {
+    expect(needsUserInput("ARGUABLE", "yes", true)).toBe(true);
+  });
+});
+
+describe("decideVerdict with a missing rubric entry", () => {
+  it("treats a missing check as unknown (never throws)", () => {
+    expect(decideVerdict([check("C1_CLAUSE_EXISTS", "yes"), check("C2_CONDITIONS_HOLD", "yes")])).toBe("ARGUABLE");
+    expect(decideVerdict([check("C4_EXPLICIT_EXCLUSION", "yes")])).toBe("WEAK");
+    expect(decideVerdict([check("C2_CONDITIONS_HOLD", "no")])).toBe("STRONG");
+    expect(decideVerdict([])).toBe("ARGUABLE");
+  });
 });

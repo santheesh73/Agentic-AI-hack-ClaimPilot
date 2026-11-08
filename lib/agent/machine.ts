@@ -11,7 +11,7 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote, stripSentencesCiting } from "./verify";
+import { matchQuote, stripUnverified } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
@@ -93,13 +93,19 @@ async function stepCount(caseId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** MAX_TOKENS_PER_CASE, if set; read directly rather than via getEnv() so
- * the budget stays optional and doesn't make every other var mandatory here. */
+/** Default per-case token cap, so a fresh deployment is protected even if
+ * MAX_TOKENS_PER_CASE is never set (audit F-007). The live eval's heaviest
+ * case used about 13k tokens, so this leaves ample headroom. */
+export const DEFAULT_MAX_TOKENS_PER_CASE = 60_000;
+
+/** Per-case token cap: MAX_TOKENS_PER_CASE if a positive integer, null
+ * (disabled) if explicitly "0", otherwise the default. Read directly rather
+ * than via getEnv() so the rest of the env stays optional here. */
 export function tokenBudget(): number | null {
-  const raw = process.env.MAX_TOKENS_PER_CASE;
-  if (!raw) return null;
+  const raw = process.env.MAX_TOKENS_PER_CASE?.trim();
+  if (raw === "0") return null;
   const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return raw && Number.isInteger(n) && n > 0 ? n : DEFAULT_MAX_TOKENS_PER_CASE;
 }
 
 async function tokensUsed(caseId: string): Promise<number> {
@@ -449,7 +455,9 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
   const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
-  const needsUser = needsUserInput(c5?.answer, unresolvedMissing.length > 0);
+  // The question is only worth the user's time if the answer could change
+  // the outcome: decide the provisional verdict first (audit F-005).
+  const needsUser = needsUserInput(decideVerdict(rubric), c5?.answer, unresolvedMissing.length > 0);
 
   const nextState: CaseState = needsUser ? "AWAITING_USER" : "DECIDE";
 
@@ -471,12 +479,24 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: nextState };
 }
 
-/** Whether the case should pause for AWAITING_USER rather than proceed to
- * DECIDE: the model couldn't confirm the facts it needs (C5 "unknown" or
- * "no" -- both mean "not known"), and there's at least one unanswered
- * missing-fact question. */
-export function needsUserInput(c5Answer: Check["answer"] | undefined, hasUnresolvedMissingFacts: boolean): boolean {
-  return (c5Answer === "unknown" || c5Answer === "no") && hasUnresolvedMissingFacts;
+/**
+ * Whether the case should pause for AWAITING_USER rather than proceed to
+ * DECIDE. Only when there are unanswered missing-fact questions AND an answer
+ * could still change the outcome:
+ *  - provisional verdict ARGUABLE: always ask (the design's rule);
+ *  - provisional verdict WEAK and C5 != yes: ask, because a wrong "don't
+ *    appeal" costs the user a valid claim, while asking costs one question;
+ *  - provisional verdict STRONG: never ask -- the appeal goes ahead anyway.
+ */
+export function needsUserInput(
+  provisionalVerdict: Verdict,
+  c5Answer: Check["answer"] | undefined,
+  hasUnresolvedMissingFacts: boolean
+): boolean {
+  if (!hasUnresolvedMissingFacts) return false;
+  if (provisionalVerdict === "ARGUABLE") return true;
+  if (provisionalVerdict === "WEAK") return c5Answer !== "yes";
+  return false;
 }
 
 export function decideVerdict(rubric: Check[]): Verdict {
@@ -605,7 +625,7 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     await logEvent({
       caseId: c.id,
       step: "VERIFY",
-      summary: `Verifier: ${results.length}/${results.length} citations matched.`,
+      summary: `Verifier: ${results.length}/${results.length} checks passed.`,
     });
     return { state: nextState };
   }
@@ -616,15 +636,18 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     await logEvent({
       caseId: c.id,
       step: "VERIFY",
-      summary: `Verifier: ${results.length - failedIds.length}/${results.length} citations matched; redrafting.`,
+      summary: `Verifier: ${results.length - failedIds.length}/${results.length} checks passed; redrafting.`,
     });
     return { state: "DRAFT" };
   }
 
-  const cleaned = stripSentencesCiting(draft!.body_md, failedIds);
+  // Redraft budget spent: remove everything verification could not vouch
+  // for -- sentences citing a failed id, and sentences with an unparsed
+  // citation format or an uncited policy claim (short_id "UNCITED").
+  const cleaned = stripUnverified(draft!.body_md, results);
   // Stripped citations stay recorded as failed (not silently flipped to ok),
   // so "citations verified" counts reflect what the model actually produced.
-  const cleanedResults = results.map((r) => (failedIds.includes(r.short_id) ? { ...r, ok: false, stripped: true } : r));
+  const cleanedResults = results.map((r) => (r.ok ? r : { ...r, stripped: true }));
   await db
     .from("drafts")
     .update({ body_md: cleaned, verification: cleanedResults, verified_at: new Date().toISOString() })
@@ -685,11 +708,31 @@ async function runRedteam(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: nextState };
 }
 
-/** POST /answer handler support: records answers and resumes at ASSESS. */
+export class InvalidStateError extends Error {
+  constructor(public state: CaseState) {
+    super(`Case is in state ${state}, not AWAITING_USER; answers are only accepted while the case is waiting for them.`);
+  }
+}
+
+/**
+ * POST /answer handler support: records answers and resumes at ASSESS.
+ * Only valid while the case is AWAITING_USER. The transition is a
+ * conditional update, so a terminal case (APPROVED, DONT_APPEAL, ERROR) or a
+ * case that hasn't been assessed yet can never be pushed back into ASSESS.
+ */
 export async function recordAnswers(caseId: string, answers: Record<string, string>) {
   const c = await getCase(caseId);
+  if (c.state !== "AWAITING_USER") throw new InvalidStateError(c.state);
   const merged = { ...(c.answers ?? {}), ...answers };
-  await updateCase(caseId, { state: "ASSESS", answers: merged });
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("cases")
+    .update({ state: "ASSESS", answers: merged, updated_at: new Date().toISOString() })
+    .eq("id", caseId)
+    .eq("state", "AWAITING_USER")
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new InvalidStateError((await getCase(caseId)).state);
   await logEvent({ caseId, step: "AWAITING_USER", summary: "User answered missing-fact questions; resuming assessment." });
 }
 

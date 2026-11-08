@@ -3,7 +3,7 @@ import fc from "fast-check";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { parsePdf } from "../lib/ingest/pdf";
-import { matchQuote } from "../lib/agent/verify";
+import { matchQuote, meaningSignature } from "../lib/agent/verify";
 
 type Page = { page_no: number; text: string; text_norm: string };
 let pages: Page[];
@@ -101,4 +101,56 @@ describe("matchQuote property tests (against the real samples/policy.pdf)", () =
       { numRuns: 100 }
     );
   });
+
+  // Audit F-001: a fuzzy match may absorb typos, but never a change of meaning.
+  it("a typo that leaves numbers and polarity words intact still verifies", () => {
+    fc.assert(
+      fc.property(fc.nat(), fc.nat(), fc.integer({ min: 60, max: 150 }), fc.nat(), (pageSeed, offsetSeed, len, editSeed) => {
+        const page = pages[pageSeed % pages.length];
+        const text = page.text_norm;
+        const start = offsetSeed % Math.max(1, text.length - len - 1);
+        const span = extractSpan(text, start, len);
+        fc.pre(span.length >= 60 && span.split(" ").length >= 8);
+        const words = span.split(" ");
+        // pick a word that is not a number or polarity word and longer than 4 chars
+        const candidates = words.map((w, i) => i).filter((i) => words[i].length > 4 && meaningSignature(words[i]) === "");
+        fc.pre(candidates.length > 0);
+        const i = candidates[editSeed % candidates.length];
+        words[i] = words[i].slice(0, -1) + (words[i].endsWith("x") ? "z" : "x");
+        fc.pre(meaningSignature(words.join(" ")) === meaningSignature(span));
+        expect(matchQuote(words.join(" "), text).ok).toBe(true);
+      }),
+      { numRuns: 150 }
+    );
+  }, 30_000);
+
+  it("changing any number in a quote never verifies", () => {
+    fc.assert(
+      fc.property(fc.nat(), fc.nat(), (pageSeed, offsetSeed) => {
+        const page = pages[pageSeed % pages.length];
+        const words = page.text_norm.split(" ");
+        const numIdx = words.map((w, i) => i).filter((i) => /^\d+$/.test(words[i]));
+        fc.pre(numIdx.length > 0);
+        const i = numIdx[offsetSeed % numIdx.length];
+        const from = Math.max(0, i - 8), to = Math.min(words.length, i + 8);
+        const quote = words.slice(from, to);
+        fc.pre(quote.length >= 8);
+        quote[i - from] = String(Number(words[i]) + 1);
+        expect(matchQuote(quote.join(" "), page.text_norm).ok).toBe(false);
+      }),
+      { numRuns: 100 }
+    );
+  }, 30_000);
+
+  it("inserting 'not' after 'shall' or 'is' never verifies", () => {
+    const hits = pages.flatMap((p) => [...p.text_norm.matchAll(/\b(shall|is) (?!not\b)/g)].map((m) => ({ p, at: m.index! })));
+    expect(hits.length).toBeGreaterThan(0);
+    for (const { p, at } of hits) {
+      const window = p.text_norm.slice(Math.max(0, at - 80), at + 120);
+      const original = window.split(" ").slice(1, -1).join(" ");
+      const tampered = original.replace(/\b(shall|is) (?!not\b)/, "$1 not ");
+      if (tampered === original || original.split(" ").length < 8) continue;
+      expect(matchQuote(tampered, p.text_norm).ok).toBe(false);
+    }
+  }, 30_000);
 });

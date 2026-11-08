@@ -73,6 +73,51 @@ describe("POST /api/cases rate limit", () => {
   });
 });
 
+// Audit F-007: limits must survive dropping the cookie.
+describe("per-IP and global limits", () => {
+  const req = (ip?: string) =>
+    new Request("http://localhost/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(ip ? { "x-forwarded-for": `${ip}, 10.0.0.1` } : {}) },
+      body: JSON.stringify({ title: "t" }),
+    }) as never;
+
+  it("clientIp takes the first x-forwarded-for entry", async () => {
+    const { clientIp } = await import("../lib/rateLimit");
+    expect(clientIp(new Request("http://x", { headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" } }))).toBe("203.0.113.7");
+    expect(clientIp(new Request("http://x", { headers: { "x-real-ip": "198.51.100.2" } }))).toBe("198.51.100.2");
+    expect(clientIp(new Request("http://x"))).toBe("unknown");
+  });
+
+  it("a client that drops its cookie every time is still stopped by the per-IP limit", async () => {
+    let n = 0;
+    const db = await import("../lib/db");
+    const spy = vi.spyOn(db, "getOrCreateOwnerId").mockImplementation(async () => `fresh-owner-${++n}`);
+    const { POST } = await import("../app/api/cases/route");
+    const statuses: number[] = [];
+    for (let i = 0; i < 25; i++) statuses.push((await POST(req("203.0.113.7"))).status);
+    spy.mockRestore();
+    expect(statuses.filter((s) => s === 200).length).toBe(20);
+    expect(statuses.slice(20).every((s) => s === 429)).toBe(true);
+    // a different IP is unaffected
+    expect((await POST(req("198.51.100.9"))).status).toBe(200);
+  });
+
+  it("the global daily LLM budget stops every client once spent", async () => {
+    process.env.GLOBAL_DAILY_LLM_CALLS = "3";
+    const { enforceRequestLimits } = await import("../lib/rateLimit");
+    const now = new Date("2026-01-01T10:00:00Z");
+    for (let i = 0; i < 3; i++) await enforceRequestLimits(req(`192.0.2.${i}`), `owner-${i}`, "step", now);
+    await expect(enforceRequestLimits(req("192.0.2.99"), "owner-99", "step", now)).rejects.toMatchObject({ status: 429 });
+    delete process.env.GLOBAL_DAILY_LLM_CALLS;
+  });
+
+  it("uploads, answers and simulate are rate limited too", async () => {
+    const { RATE_LIMITS } = await import("../lib/rateLimit");
+    for (const b of ["upload", "answer", "simulate", "ip:upload", "ip:answer", "ip:simulate"] as const) expect(RATE_LIMITS[b].limit).toBeGreaterThan(0);
+  });
+});
+
 describe("MAX_TOKENS_PER_CASE", () => {
   const original = process.env.MAX_TOKENS_PER_CASE;
   afterEach(() => {
@@ -92,15 +137,22 @@ describe("MAX_TOKENS_PER_CASE", () => {
     expect(fakeDb.cases[0].error).toMatch(/Token budget exceeded \(1100 of 1000/);
   });
 
-  it("is ignored when unset", async () => {
+  it("defaults to a 60k cap when unset, so a fresh deployment is protected (audit F-007)", async () => {
     delete process.env.MAX_TOKENS_PER_CASE;
+    const { tokenBudget, DEFAULT_MAX_TOKENS_PER_CASE } = await import("../lib/agent/machine");
+    expect(tokenBudget()).toBe(DEFAULT_MAX_TOKENS_PER_CASE);
+    expect(DEFAULT_MAX_TOKENS_PER_CASE).toBe(60_000);
+  });
+
+  it("can be disabled explicitly with 0", async () => {
+    process.env.MAX_TOKENS_PER_CASE = "0";
     const { tokenBudget } = await import("../lib/agent/machine");
     expect(tokenBudget()).toBeNull();
   });
 
-  it("ignores a non-numeric value rather than crashing", async () => {
+  it("falls back to the default for a non-numeric value rather than crashing or disabling", async () => {
     process.env.MAX_TOKENS_PER_CASE = "lots";
     const { tokenBudget } = await import("../lib/agent/machine");
-    expect(tokenBudget()).toBeNull();
+    expect(tokenBudget()).toBe(60_000);
   });
 });

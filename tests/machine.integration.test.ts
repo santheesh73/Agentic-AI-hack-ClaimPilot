@@ -203,7 +203,11 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     const base = mockGenerate("assess_case") as { checks: Array<{ id: string; answer: string }>; ledger: unknown[] };
     nextAssess = {
       ...base,
-      checks: base.checks.map((ch) => (ch.id === "C5_FACTS_KNOWN" ? { ...ch, answer: "unknown" } : ch)),
+      // Undecided until the start date is known: C2/C3 unknown -> ARGUABLE,
+      // so the question can change the outcome and the case should ask.
+      checks: base.checks.map((ch) =>
+        ["C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE", "C5_FACTS_KNOWN"].includes(ch.id) ? { ...ch, answer: "unknown" } : ch
+      ),
       missing_facts: [{ key: "start_date", question: "When did your first policy start?" }],
     };
 
@@ -221,6 +225,20 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     expect(state).toBe("AWAITING_APPROVAL");
     // The second assessment replaced the first ledger instead of colliding with it.
     expect(fakeDb.evidence.filter((e) => e.case_id === caseId).map((e) => e.short_id)).toEqual(["E1"]);
+  });
+
+  it("does not ask the user when the verdict is already STRONG (audit F-005)", async () => {
+    const { runStep } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    const base = mockGenerate("assess_case") as { checks: Array<{ id: string; answer: string }> };
+    nextAssess = {
+      ...base,
+      checks: base.checks.map((ch) => (ch.id === "C5_FACTS_KNOWN" ? { ...ch, answer: "unknown" } : ch)),
+      missing_facts: [{ key: "hospital", question: "Which hospital were you admitted to?" }],
+    };
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+    expect(state).toBe("AWAITING_APPROVAL");
   });
 
   it("refuses to draft a letter when no evidence quote could be verified", async () => {
