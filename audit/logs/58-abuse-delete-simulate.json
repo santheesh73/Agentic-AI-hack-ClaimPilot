@@ -4,8 +4,8 @@
     "http429": 40
   },
   "50 x POST /api/cases (fresh-cookie-each-time)": {
-    "created": 50,
-    "http429": 0
+    "created": 20,
+    "http429": 30
   },
   "delete": {
     "status": 200,

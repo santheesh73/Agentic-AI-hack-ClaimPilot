@@ -96,15 +96,11 @@
     ],
     "followups_at_5000001": [
       "ESCALATE_BIMA_BHAROSA",
-      "OMBUDSMAN_ELIGIBLE",
-      "OMBUDSMAN_LAST_DATE",
       "OMBUDSMAN_INELIGIBLE_CAP"
     ]
   },
   "ui_over_cap_labels": [
     "Escalate to IRDAI Bima Bharosa if unresolved",
-    "Eligible to file with the Insurance Ombudsman",
-    "Last date to file with the Insurance Ombudsman",
     "Ombudsman route not available (claim exceeds ₹50 lakh cap)"
   ],
   "rule_ids_used": [

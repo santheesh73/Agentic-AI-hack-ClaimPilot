@@ -6,9 +6,9 @@
     "fails": []
   },
   "edited_1to3": {
-    "ok": 200,
+    "ok": 165,
     "of": 200,
-    "rate": 1
+    "rate": 0.825
   },
   "fabricated": {
     "falseMatch": 0,
@@ -16,70 +16,70 @@
     "hits": []
   },
   "semantic_tampering": {
-    "accepted": 9,
+    "accepted": 0,
     "of": 9,
     "results": [
       {
         "clause": "Expenses related to the treatment of a pre-existin...",
         "original_ok": true,
         "tamper": "insert 'not' (shall be -> shall not be)",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.983
       },
       {
         "clause": "Expenses related to the treatment of a pre-existin...",
         "original_ok": true,
         "tamper": "number change 48 -> 24 months",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.991
       },
       {
         "clause": "Expenses related to the treatment of a pre-existin...",
         "original_ok": true,
         "tamper": "excluded -> included",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.991
       },
       {
         "clause": "Expenses related to the treatment of the following...",
         "original_ok": true,
         "tamper": "insert 'not' (shall be -> shall not be)",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.979
       },
       {
         "clause": "Expenses related to the treatment of the following...",
         "original_ok": true,
         "tamper": "number change 24 -> 12 months",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.987
       },
       {
         "clause": "Expenses related to the treatment of the following...",
         "original_ok": true,
         "tamper": "excluded -> included",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.987
       },
       {
         "clause": "a condition first diagnosed, or for which medical ...",
         "original_ok": true,
         "tamper": "delete negation (does not constitute -> does constitute)",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.971
       },
       {
         "clause": "Cosmetic surgery undertaken for aesthetic purposes...",
         "original_ok": true,
         "tamper": "excluded -> included",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.988
       },
       {
         "clause": "Cosmetic surgery undertaken for aesthetic purposes...",
         "original_ok": true,
         "tamper": "is excluded -> is not excluded",
-        "tampered_ok": true,
+        "tampered_ok": false,
         "score": 0.977
       }
     ]
@@ -124,7 +124,7 @@
   },
   "perf": {
     "largest_page_chars": 2099,
-    "ms_per_call": 237.6,
-    "synthetic_50k_chars_ms": 6553.4
+    "ms_per_call": 226.3,
+    "synthetic_50k_chars_ms": 6450.6
   }
 }

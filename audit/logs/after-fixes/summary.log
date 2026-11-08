@@ -1,0 +1,13 @@
+F-005 verdict vs design: mismatches 186 / 1458 {'ARGUABLE -> WEAK': 18, 'ASK -> WEAK': 6, 'WEAK -> ASK': 162}
+F-001 tampered accepted: 0 / 9 | verbatim 200 /200 | fabricated false matches 0 | 1-3 random edits still matching 165 /200
+F-002 formats parsed as intended: 13 / 14 | misses: ['markdown link style']
+F-004 after-stop strip: 'Please reconsider the claim. We attach the discharge summary.'
+F-004 markdown: 'Para one sentence. [cite:E1]\n\n- bullet item one\n- bullet item two'
+F-004 abbreviation: 'Thank you.'
+F-002 uncited claim final body: '# Appeal\n\nThe waiting period has expired. [cite:E1]' [('E1', True), ('UNCITED', False)]
+F-002 unparsed marker final body: '# Appeal' [('E1', True), ('E7', False)]
+F-004 strip_after_stop final body: '# Appeal\n\nThe waiting period has expired. [cite:E1] Please settle the claim of Rs 1,00,000.'
+F-001 inverted quote evidence: [{'short_id': 'E1', 'verified': False, 'score': 0.9829787234042553, 'quote': 'Expenses related to the treatment of a pre-existing disease (PED) and its direct complicat'}] final ERROR
+F-006 terminal after answer: {'APPROVED': 'APPROVED (rejected: InvalidStateError)', 'DONT_APPEAL': 'DONT_APPEAL (rejected: InvalidStateError)', 'ERROR': 'ERROR (rejected: InvalidStateError)'}
+F-008 over-cap labels: ['Escalate to IRDAI Bima Bharosa if unresolved', 'Ombudsman route not available (claim exceeds ₹50 lakh cap)']
+F-007 cookie-dropping (test harness has no IP header): {'created': 20, 'http429': 30}

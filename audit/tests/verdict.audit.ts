@@ -22,8 +22,9 @@ function designReference(c: A[], missingUnanswered: boolean): string {
 // otherwise DECIDE applies decideVerdict.
 function shipped(c: A[], missingUnanswered: boolean): string {
   const rubric = IDS.map((id, i) => ({ id, answer: c[i], rationale: "", evidence_refs: [] }));
-  if (needsUserInput(c[4], missingUnanswered)) return "ASK";
-  return decideVerdict(rubric as never);
+  const verdict = decideVerdict(rubric as never);
+  if (needsUserInput(verdict, c[4], missingUnanswered)) return "ASK";
+  return verdict;
 }
 
 describe("verdict logic vs §2 design", () => {

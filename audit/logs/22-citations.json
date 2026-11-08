@@ -70,8 +70,10 @@
       "intended": [
         "E1"
       ],
-      "parsed": [],
-      "matches_intent": false,
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": true
     },
     {
@@ -81,9 +83,9 @@
         "E1"
       ],
       "parsed": [
-        "e1"
+        "E1"
       ],
-      "matches_intent": false,
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": false
     },
     {
@@ -105,8 +107,11 @@
         "E1",
         "E2"
       ],
-      "parsed": [],
-      "matches_intent": false,
+      "parsed": [
+        "E1",
+        "E2"
+      ],
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": true
     },
     {
@@ -116,8 +121,11 @@
         "E1",
         "E2"
       ],
-      "parsed": [],
-      "matches_intent": false,
+      "parsed": [
+        "E1",
+        "E2"
+      ],
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": true
     },
     {
@@ -128,8 +136,12 @@
         "E2",
         "E3"
       ],
-      "parsed": [],
-      "matches_intent": false,
+      "parsed": [
+        "E1",
+        "E2",
+        "E3"
+      ],
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": true
     },
     {
@@ -138,8 +150,10 @@
       "intended": [
         "E1"
       ],
-      "parsed": [],
-      "matches_intent": false,
+      "parsed": [
+        "E1"
+      ],
+      "matches_intent": true,
       "unparsed_marker_left_in_letter": true
     },
     {
@@ -165,10 +179,21 @@
       "unparsed_marker_left_in_letter": false
     }
   ],
-  "verifyDraft_on_unparsed_marker": [],
+  "verifyDraft_on_unparsed_marker": [
+    {
+      "short_id": "E1",
+      "ok": false,
+      "score": 0
+    },
+    {
+      "short_id": "E2",
+      "ok": false,
+      "score": 0
+    }
+  ],
   "strip_marker_after_full_stop": {
     "input": "The waiting period has expired. [cite:E9] Please reconsider the claim. We attach the discharge summary.",
-    "output": "The waiting period has expired. We attach the discharge summary."
+    "output": "Please reconsider the claim. We attach the discharge summary."
   },
   "strip_marker_before_full_stop": {
     "input": "The waiting period has expired [cite:E9]. Please reconsider the claim. We attach the discharge summary.",
@@ -176,10 +201,10 @@
   },
   "strip_preserves_markdown": {
     "input": "Para one sentence. [cite:E1]\n\nPara two has a bad cite [cite:E9].\n\n- bullet item one\n- bullet item two",
-    "output": "Para one sentence. - bullet item one\n- bullet item two"
+    "output": "Para one sentence. [cite:E1]\n\n- bullet item one\n- bullet item two"
   },
   "strip_abbreviation": {
     "input": "Per Sec. 6.3 of the policy the claim is valid [cite:E9]. Thank you.",
-    "output": "Per Sec. Thank you."
+    "output": "Thank you."
   }
 }

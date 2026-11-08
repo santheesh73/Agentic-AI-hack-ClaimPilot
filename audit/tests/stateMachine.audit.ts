@@ -95,8 +95,9 @@ describe("state machine (audit scenarios)", () => {
     for (const term of ["APPROVED", "DONT_APPEAL", "ERROR"]) {
       await seed(); baseScript();
       db.cases[0].state = term; db.cases[0].verdict = "STRONG";
-      await recordAnswers("c1", { x: "y" });
-      out[term] = db.cases[0].state;
+      let note = "";
+      try { await recordAnswers("c1", { x: "y" }); } catch (e) { note = ` (rejected: ${(e as Error).constructor.name})`; }
+      out[term] = db.cases[0].state + note;
     }
     // approve twice (the route's state check happens before approveCase, so two concurrent requests both pass it)
     await seed(); baseScript(); await runToPause();

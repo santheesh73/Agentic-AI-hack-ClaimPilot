@@ -17,31 +17,50 @@
   },
   "uncited_claim": {
     "final": "AWAITING_APPROVAL",
-    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1] Clause 9.4 of the policy also guarantees full reimbursement of all hospital bills within 7 days.",
+    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1]",
     "verification": [
       {
         "short_id": "E1",
         "ok": true,
         "score": 1
+      },
+      {
+        "short_id": "UNCITED",
+        "ok": false,
+        "score": 0,
+        "reason": "uncited_policy_claim: Clause 9.4 of the policy also guarantees full reimbursement of all hospital bills within 7 days.",
+        "stripped": true
       }
     ]
   },
   "unparsed_marker": {
     "final": "AWAITING_APPROVAL",
-    "body": "# Appeal\n\nThe policy covers 100% of this claim with no waiting period [cite:E1; E7].",
-    "verification": []
+    "body": "# Appeal",
+    "verification": [
+      {
+        "short_id": "E1",
+        "ok": true,
+        "score": 1
+      },
+      {
+        "short_id": "E7",
+        "ok": false,
+        "score": 0,
+        "stripped": true
+      }
+    ]
   },
   "strip_after_stop": {
     "final": "AWAITING_APPROVAL",
-    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1] The policy waives all exclusions for senior citizens.",
+    "body": "# Appeal\n\nThe waiting period has expired. [cite:E1] Please settle the claim of Rs 1,00,000.",
     "redrafts": 2
   },
   "inverted_quote": {
-    "final": "AWAITING_APPROVAL",
+    "final": "ERROR",
     "evidence": [
       {
         "short_id": "E1",
-        "verified": true,
+        "verified": false,
         "score": 0.9829787234042553,
         "quote": "Expenses related to the treatment of a pre-existing disease (PED) and its direct complicat"
       }
@@ -49,9 +68,9 @@
   },
   "terminal": {
     "after_answer": {
-      "APPROVED": "ASSESS",
-      "DONT_APPEAL": "ASSESS",
-      "ERROR": "ASSESS"
+      "APPROVED": "APPROVED (rejected: InvalidStateError)",
+      "DONT_APPEAL": "DONT_APPEAL (rejected: InvalidStateError)",
+      "ERROR": "ERROR (rejected: InvalidStateError)"
     },
     "followups_after_double_approve": 6,
     "distinct_actions": 3
