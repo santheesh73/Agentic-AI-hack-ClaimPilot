@@ -1,0 +1,9 @@
+{
+  "name": "case_e_30day_wait_illness_genuine",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_e.txt",
+  "answers": {
+    "prior_cover": "I had no health insurance before this policy. The dengue was diagnosed on 27 September 2026."
+  },
+  "expected": "WEAK"
+}

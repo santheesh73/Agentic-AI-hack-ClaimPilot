@@ -1,0 +1,9 @@
+{
+  "name": "case_f_hernia_within_24_months",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_f.txt",
+  "answers": {
+    "coverage": "My first policy with any insurer started on 01 August 2025. I have no earlier policy to port."
+  },
+  "expected": "WEAK"
+}

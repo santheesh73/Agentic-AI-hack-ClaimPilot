@@ -1,0 +1,9 @@
+{
+  "name": "case_k_reconstruction_after_burns",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_k.txt",
+  "answers": {
+    "cause": "The surgery was reconstruction after second-degree burns from a kitchen gas cylinder fire on 28 September 2026. The treating surgeon has certified it as medically necessary reconstruction following burns."
+  },
+  "expected": "STRONG"
+}

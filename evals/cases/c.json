@@ -2,5 +2,8 @@
   "name": "case_c_cosmetic_surgery_explicit_exclusion",
   "policy": "samples/policy.pdf",
   "letter": "samples/letter_c.txt",
+  "answers": {
+    "purpose": "The rhinoplasty was purely cosmetic, to change the shape of my nose. It was not needed because of any accident, burn or cancer, and no doctor certified it as medically necessary."
+  },
   "expected": "WEAK"
 }
