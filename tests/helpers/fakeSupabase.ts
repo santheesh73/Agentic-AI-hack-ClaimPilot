@@ -66,6 +66,12 @@ function matchesFilter(row: Row, f: Filter): boolean {
   }
 }
 
+// Unique constraints from supabase/migrations that the code under test could
+// plausibly violate; enforced so a duplicate insert fails like it would live.
+const UNIQUE_KEYS: Record<string, string[]> = {
+  evidence: ["case_id", "short_id"],
+};
+
 class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: null; count?: number }> {
   private filters: Filter[] = [];
   private mode: "select" | "insert" | "update" | "delete" = "select";
@@ -153,6 +159,22 @@ class FakeQueryBuilder implements PromiseLike<{ data: unknown; error: null; coun
 
     if (this.mode === "insert") {
       const rows = Array.isArray(this.payload) ? this.payload : [this.payload!];
+      const unique = UNIQUE_KEYS[this.table];
+      if (unique) {
+        const keyOf = (r: Row) => unique.map((col) => String(r[col])).join("\u0000");
+        const seen = new Set(table.map(keyOf));
+        for (const r of rows) {
+          const k = keyOf(r);
+          if (seen.has(k)) {
+            // Shaped like a real PostgrestError: a plain object, not an Error.
+            return {
+              data: null,
+              error: { code: "23505", message: `duplicate key value violates unique constraint "${this.table}_${unique.join("_")}_key"`, details: null, hint: null },
+            } as never;
+          }
+          seen.add(k);
+        }
+      }
       const inserted = rows.map((r) => ({ id: nextId(this.table), created_at: new Date().toISOString(), ...r }));
       table.push(...inserted);
       const data = this.wantSingle !== "none" ? inserted[0] : inserted;

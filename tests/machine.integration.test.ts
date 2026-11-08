@@ -38,7 +38,18 @@ const REJECTION_TEXT = "Your claim is rejected under Excl01 Pre-Existing Disease
 const VERBATIM_QUOTE =
   "once the policy has been continuously renewed without a break for 48 months, this exclusion shall cease to apply";
 
+// When set, the next assess_case call returns this instead of the default
+// (used to script a first assessment that pauses for the user).
+let nextAssess: unknown = null;
+// When set, every draft_appeal call returns this body.
+let draftBody: string | null = null;
+
 function mockGenerate(tool: string): unknown {
+  if (tool === "assess_case" && nextAssess) {
+    const out = nextAssess;
+    nextAssess = null;
+    return out;
+  }
   switch (tool) {
     case "extract_rejection":
       return {
@@ -75,7 +86,7 @@ function mockGenerate(tool: string): unknown {
     case "draft_appeal":
       return {
         subject: "Appeal for reconsideration",
-        body_md: `We request reconsideration since the waiting period has elapsed. [cite:E1]`,
+        body_md: draftBody ?? `We request reconsideration since the waiting period has elapsed. [cite:E1]`,
       };
     case "redteam_review":
       return { rebuttal: "The appeal is well-supported.", attacked: [], supporting: [], severity: "low" };
@@ -150,6 +161,8 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     fakeDb = {};
     resetFakeIds();
     vi.clearAllMocks();
+    nextAssess = null;
+    draftBody = null;
   });
 
   it("runs INTAKE through AWAITING_APPROVAL with a fully-cited, fully-verified draft", async () => {
@@ -182,6 +195,63 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     // Every /step call claims and releases the lease -- no stale lock left behind.
     const lockEvents = fakeDb.agent_events.filter((e) => e.case_id === caseId);
     expect(lockEvents.length).toBeGreaterThan(0);
+  });
+
+  it("re-assesses after the user answers without duplicating evidence ids", async () => {
+    const { runStep, recordAnswers } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    const base = mockGenerate("assess_case") as { checks: Array<{ id: string; answer: string }>; ledger: unknown[] };
+    nextAssess = {
+      ...base,
+      checks: base.checks.map((ch) => (ch.id === "C5_FACTS_KNOWN" ? { ...ch, answer: "unknown" } : ch)),
+      missing_facts: [{ key: "start_date", question: "When did your first policy start?" }],
+    };
+
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+    expect(state).toBe("AWAITING_USER");
+    expect(fakeDb.evidence.filter((e) => e.case_id === caseId).map((e) => e.short_id)).toEqual(["E1"]);
+
+    await recordAnswers(caseId, { start_date: "1 March 2022" });
+    state = "ASSESS";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+
+    const finalCase = fakeDb.cases.find((c) => c.id === caseId)!;
+    expect(finalCase.error).toBeNull();
+    expect(state).toBe("AWAITING_APPROVAL");
+    // The second assessment replaced the first ledger instead of colliding with it.
+    expect(fakeDb.evidence.filter((e) => e.case_id === caseId).map((e) => e.short_id)).toEqual(["E1"]);
+  });
+
+  it("refuses to draft a letter when no evidence quote could be verified", async () => {
+    const { runStep } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    const base = mockGenerate("assess_case") as { ledger: Array<Record<string, unknown>> };
+    nextAssess = { ...base, ledger: [{ ...base.ledger[0], quote: "this sentence appears nowhere in the policy text at all" }] };
+
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+
+    expect(state).toBe("ERROR");
+    expect(fakeDb.cases[0].error).toMatch(/No policy text could be verified/);
+    expect(fakeDb.drafts.filter((d) => d.case_id === caseId)).toHaveLength(0);
+  });
+
+  it("keeps stripped citations recorded as failed, not silently ok", async () => {
+    const { runStep } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    draftBody = "The waiting period has elapsed. [cite:E1] The policy also promises a refund. [cite:E9]";
+
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+
+    expect(state).toBe("AWAITING_APPROVAL");
+    const drafts = fakeDb.drafts.filter((d) => d.case_id === caseId);
+    const final = drafts[drafts.length - 1];
+    expect(final.body_md).not.toContain("[cite:E9]");
+    const v = final.verification as Array<{ short_id: string; ok: boolean; stripped?: boolean }>;
+    expect(v.find((r) => r.short_id === "E9")).toMatchObject({ ok: false, stripped: true });
+    expect(v.find((r) => r.short_id === "E1")?.ok).toBe(true);
   });
 
   it("surfaces a model schema failure as ERROR after exhausting retries", async () => {

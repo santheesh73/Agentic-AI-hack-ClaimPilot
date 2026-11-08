@@ -87,7 +87,14 @@ async function runCase(evalCase: EvalCase) {
   }
 
   const { data: finalCase } = await db.from("cases").select("verdict, state").eq("id", caseId).single();
-  const { data: drafts } = await db.from("drafts").select("verification").eq("case_id", caseId);
+  // Score the final draft only; earlier versions were redrafted precisely
+  // because their citations failed.
+  const { data: drafts } = await db
+    .from("drafts")
+    .select("verification")
+    .eq("case_id", caseId)
+    .order("version", { ascending: false })
+    .limit(1);
   const { data: events } = await db.from("agent_events").select("tokens_in, tokens_out").eq("case_id", caseId);
 
   const allVerifications = (drafts ?? []).flatMap((d) => d.verification ?? []);

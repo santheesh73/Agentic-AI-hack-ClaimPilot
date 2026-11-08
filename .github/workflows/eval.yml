@@ -40,7 +40,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           MODEL_FAST: ${{ vars.MODEL_FAST }}
           MODEL_STRONG: ${{ vars.MODEL_STRONG }}
-        run: tsx evals/run.ts
+        run: tsx --conditions=react-server evals/run.ts
 
       - name: Upload eval results
         if: always()
