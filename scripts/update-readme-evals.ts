@@ -90,7 +90,8 @@ export function summarize(runs: EvalRun[], sourceFiles: string[] = []): string {
   lines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const [name, rs] of [...byCase.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const ok = rs.filter((r) => r.got === r.expected).length;
-    const cites = rs.some((r) => r.verifiedPct > 0) ? `${mean(rs.map((r) => r.verifiedPct))}%` : "n/a";
+    const draftedRuns = rs.filter((r) => r.verifiedPct > 0);
+    const cites = draftedRuns.length ? `${mean(draftedRuns.map((r) => r.verifiedPct))}% (${draftedRuns.length} drafted)` : "n/a";
     lines.push(
       `| ${name} | ${rs[0].expected} | ${rs.map((r) => r.got).join(", ")} | ${rs.map((r) => r.finalState ?? "?").join(", ")} | ${ok}/${rs.length} | ${cites} | ${median(rs.map((r) => r.ms))} | ${mean(rs.map((r) => r.tokens))} |`
     );

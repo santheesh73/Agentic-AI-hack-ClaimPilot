@@ -34,7 +34,7 @@ describe("summarize", () => {
   });
 
   it("writes one row per case with per-run results, median ms and mean tokens", () => {
-    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | ?, ? | 1/2 | 75% | 2000 | 300 |");
+    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | ?, ? | 1/2 | 75% (2 drafted) | 2000 | 300 |");
     expect(md).toContain("| C | WEAK | WEAK, ERROR: boom | ?, ? | 1/2 | n/a | 1000 | 100 |");
   });
 
