@@ -3,7 +3,7 @@
 ClaimPilot is an AI agent that turns a rejected health insurance claim into a cited, self-verified appeal — with real escalation deadlines.
 
 [![CI](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml/badge.svg?branch=hardening)](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-187%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-202%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-82%25%20statements-yellow)
 ![Next.js](https://img.shields.io/badge/Next.js-16%20(App%20Router)-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
@@ -48,7 +48,7 @@ Health insurance claim rejections in India are opaque and hard to contest. Polic
 ## Results
 
 <!-- EVAL:START -->
-**Not from an automated script yet** — `scripts/update-readme-evals.ts` (populating this block from `evals/results/*.json`) doesn't exist, because no 12-case, ×3-run eval has been completed. What's actually been verified, against the live Supabase database and a live Gemini call (`gemini-3.5-flash-lite`, `LLM_PROVIDER=google`), via `node --env-file=.env.local scripts/prove-local.mjs`:
+**Not from an automated script yet** — `pnpm eval:readme` (`scripts/update-readme-evals.ts`) rewrites this block from `evals/results/*.json`, but no 12-case, ×3-run eval has been completed, so there are no result files for it to read yet. What's actually been verified, against the live Supabase database and a live Gemini call (`gemini-3.5-flash-lite`, `LLM_PROVIDER=google`), via `node --env-file=.env.local scripts/prove-local.mjs`:
 
 | Case | Verdict | State reached | Citations verified |
 | --- | --- | --- | --- |
@@ -58,7 +58,7 @@ Health insurance claim rejections in India are opaque and hard to contest. Polic
 
 `samples/policy.pdf` is an authored stand-in grounded in real IRDAI standard clauses (see `docs/AI_DISCLOSURE.md`), not the real UIIC document originally intended — these three results should be re-verified once the real PDF is in place, and expanded to a 12-case set per `docs/KNOWN_ISSUES.md`.
 
-Separately, the backend logic is tested directly: 187 tests (`pnpm test`), 82.07% statement / 86.64% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`, including an exhaustive 81-combination verdict truth table and property-based citation-matching tests against the real policy document.
+Separately, the backend logic is tested directly: 202 tests (`pnpm test`), 82.44% statement / 87.02% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`, including an exhaustive 81-combination verdict truth table and property-based citation-matching tests against the real policy document.
 <!-- EVAL:END -->
 
 ## Architecture
@@ -254,7 +254,7 @@ docs/                 ARCHITECTURE.md, AI_DISCLOSURE.md, AUDIT.md, KNOWN_ISSUES.
 
 ## Roadmap
 
-- Expand the eval set to 12 cases across more rejection categories, run ×3 for stability, and wire `scripts/update-readme-evals.ts` to populate the Results section above automatically.
+- Expand the eval set to 12 cases across more rejection categories, run ×3 for stability, then run `pnpm eval:readme` to populate the Results section above from those runs.
 - Real `pg_cron`-driven follow-ups instead of the manual `/simulate` endpoint.
 - OCR fallback for scanned PDFs (currently an explicit non-goal, not a gap).
 - Multi-insurer eval set, since the rubric and prompts have only been checked against one policy's clause structure.

@@ -9,7 +9,7 @@ ClaimPilot is an AI agent that turns a rejected Indian health insurance claim in
 ## Resume bullets
 
 - Built an AI claim-appeal agent (Next.js, Postgres FTS, Vercel AI SDK) whose verdict comes from a code-level rubric, not the model, and whose citations are fuzzy-matched against source text.
-- Raised backend test coverage from 15% to 82% (187 tests) with an offline mocked-LLM, in-memory-DB harness that runs the real state machine end to end.
+- Raised backend test coverage from 15% to 82% (202 tests) with an offline mocked-LLM, in-memory-DB harness that runs the real state machine end to end.
 - Found and fixed 10+ production bugs by running code against real data, including a PDF parser crash that would have broken both the sample flow and the eval suite.
 
 <!-- Accuracy-metric bullet intentionally omitted: no 12-case, ×3-run eval exists yet, so there is no real verdict-accuracy or stability percentage to cite. Add one after `pnpm eval` has been run against the full eval set and its result is in evals/results/. -->
