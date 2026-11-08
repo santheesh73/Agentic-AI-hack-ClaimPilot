@@ -299,6 +299,23 @@ async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "RETRIEVE" };
 }
 
+/** Patterns for the clause identifiers named in an insurer's citation, e.g.
+ * "Section 6 (Disclosure), Clause 6.2" -> /6.2/ and /Section 6/;
+ * "Excl01 (Pre-Existing Diseases)" -> /Excl01/ (also matches "Excl1"). */
+export function clauseRefs(clauseCited: string): RegExp[] {
+  const refs: RegExp[] = [];
+  for (const m of clauseCited.matchAll(/\bExcl\s*0*(\d{1,2})\b/gi)) {
+    refs.push(new RegExp(`\\bExcl\\s*0*${m[1]}\\b`, "i"));
+  }
+  for (const m of clauseCited.matchAll(/(?<![\d.])(\d{1,2}\.\d{1,2})(?![\d.])/g)) {
+    refs.push(new RegExp(`(?<![\\d.])${m[1].replace(".", "\\.")}(?![\\d])`));
+  }
+  for (const m of clauseCited.matchAll(/\bSection\s+(\d{1,2})\b/gi)) {
+    refs.push(new RegExp(`\\bSection\\s+${m[1]}\\b(?!\\.)`, "i"));
+  }
+  return refs;
+}
+
 async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const facts = c.facts!;
@@ -321,6 +338,16 @@ async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
     .from("pages")
     .select("id, page_no, text, document_id")
     .in("document_id", policyDocIds.length ? policyDocIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  // Full-text search can miss a clause cited by number ("Clause 6.2",
+  // "Excl01"), since websearch_to_tsquery tokenizes those poorly. Always
+  // include pages that literally contain the cited clause id, ranked first.
+  const refs = clauseRefs(facts.clause_cited ?? "");
+  for (const p of allPolicyPages ?? []) {
+    if (refs.some((re) => re.test(p.text as string))) {
+      byId.set(p.id, { id: p.id, page_no: p.page_no, rank: Number.MAX_SAFE_INTEGER });
+    }
+  }
 
   let extrasAdded = 0;
   for (const p of allPolicyPages ?? []) {
@@ -347,6 +374,28 @@ async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "ASSESS" };
 }
 
+/** Verifies a ledger quote against the page the model attributed it to and,
+ * if it doesn't match there, against the other retrieved pages. Models
+ * sometimes copy a quote correctly but label it with a neighbouring page;
+ * the quote is still re-checked against real policy text, so this only
+ * fixes the page reference, never accepts text that isn't in the policy. */
+export function locateQuote(
+  quote: string,
+  statedPageId: string,
+  pages: Array<{ id: string; text_norm: string }>
+): { page_id: string; ok: boolean; score: number } {
+  const stated = pages.find((p) => p.id === statedPageId);
+  const first = stated ? matchQuote(quote, stated.text_norm) : { ok: false, score: 0 };
+  if (first.ok) return { page_id: statedPageId, ...first };
+  let best: { page_id: string; ok: boolean; score: number } | null = null;
+  for (const p of pages) {
+    if (p.id === statedPageId) continue;
+    const m = matchQuote(quote, p.text_norm);
+    if (m.ok && (!best || m.score > best.score)) best = { page_id: p.id, ...m };
+  }
+  return best ?? { page_id: statedPageId, ...first };
+}
+
 async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const { data: pages } = await db
@@ -359,8 +408,6 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     page_no: p.page_no,
     text: p.text,
   }));
-  const pageById = new Map((pages ?? []).map((p) => [p.id, p]));
-
   const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {});
 
   const tempToShort = new Map<string, string>();
@@ -368,13 +415,12 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
 
   const evidenceRows = assessment.ledger.map((l) => {
     const short_id = tempToShort.get(l.temp_id)!;
-    const page = pageById.get(l.page_id);
-    const { ok, score } = page ? matchQuote(l.quote, page.text_norm) : { ok: false, score: 0 };
+    const { page_id, ok, score } = locateQuote(l.quote, l.page_id, pages ?? []);
     return {
       case_id: c.id,
       short_id,
       claim: l.claim,
-      page_id: l.page_id,
+      page_id,
       quote: l.quote,
       match_score: score,
       verified: ok,

@@ -254,6 +254,21 @@ describe("state machine integration (mocked LLM + in-memory DB, fully offline)",
     expect(v.find((r) => r.short_id === "E1")?.ok).toBe(true);
   });
 
+  it("verifies a verbatim quote even when the model labels it with the wrong page", async () => {
+    const { runStep } = await import("../lib/agent/machine");
+    const caseId = await seedCase();
+    const base = mockGenerate("assess_case") as { ledger: Array<Record<string, unknown>> };
+    nextAssess = { ...base, ledger: [{ ...base.ledger[0], page_id: "page-rejection-1" }] };
+
+    let state = "INTAKE";
+    for (let i = 0; i < 20 && !PAUSE_OR_TERMINAL.has(state); i++) state = (await runStep(caseId)).state;
+
+    expect(state).toBe("AWAITING_APPROVAL");
+    const ev = fakeDb.evidence.filter((e) => e.case_id === caseId);
+    expect(ev).toHaveLength(1);
+    expect(ev[0]).toMatchObject({ verified: true, page_id: "page-policy-1" });
+  });
+
   it("surfaces a model schema failure as ERROR after exhausting retries", async () => {
     vi.doMock("../lib/models", async (importOriginal) => {
       const actual = await importOriginal<typeof import("../lib/models")>();

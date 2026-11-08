@@ -33,6 +33,8 @@ You are assessing whether an Indian health insurance claim rejection should be a
 
 Rules:
 - Each answer must agree with its own rationale: if your date arithmetic shows a waiting period had expired before treatment, C2 is "no" and C3 is "yes".
+- An overriding clause or exception counts for C3 only if its own conditions hold on these facts. Check them explicitly (e.g. a clause about conditions "first diagnosed on or after the effective date" does not help if the condition was diagnosed before it).
+- If a waiting period has not completed on the dates in the documents, and the policy has a portability or continuity-of-cover clause, the insured's prior continuous health cover would change the verdict. Unless the documents or the user's answers already say whether the insured had prior cover, set C5 to "unknown" and add a missing_facts question asking whether they had health insurance with another insurer before this policy, and from when, without a break.
 - Quotes in the ledger must be copied character for character from the given page text.
 - Do date arithmetic explicitly in the rationale (e.g. "Policy start 2023-01-10 + 24 months = 2025-01-10 < admission 2026-08-02").
 - Use the user's answers when present.

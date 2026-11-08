@@ -1,0 +1,9 @@
+{
+  "name": "heldout_o_joint_replacement_after_accident",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_o.txt",
+  "answers": {
+    "cause": "The hip replacement was needed because I fractured my hip in a fall on a wet staircase on 07 October 2026; the casualty record and X-ray report show the fracture from that fall."
+  },
+  "expected": "STRONG"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "heldout_p_portability_with_break_in_cover",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_p.txt",
+  "answers": {
+    "prior_cover": "I had a policy with Star Health from 2018 until it lapsed on 30 June 2024. I did not renew it, and I had no health insurance from July to November 2024 before this policy started on 01 December 2024."
+  },
+  "expected": "WEAK"
+}
