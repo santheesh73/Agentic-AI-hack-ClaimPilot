@@ -3,7 +3,7 @@
 ClaimPilot is an AI agent that turns a rejected health insurance claim into a cited, self-verified appeal — with real escalation deadlines.
 
 [![CI](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml/badge.svg?branch=hardening)](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-285%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-286%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-87%25%20statements-yellowgreen)
 ![Next.js](https://img.shields.io/badge/Next.js-16%20(App%20Router)-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
@@ -29,7 +29,7 @@ Health insurance claim rejections in India are opaque and hard to contest. Polic
 3. **Runs a six-check rubric.** Does the cited clause exist? Do its conditions actually hold on these facts? Is there an overriding clause? Is the treatment explicitly excluded elsewhere? Are all the needed facts known? Are the supporting documents present?
 4. **Decides a verdict in code**, not by asking the model for one directly: `STRONG`, `ARGUABLE`, or `WEAK`, from the rubric's answers via a plain, unit-tested function.
 5. **Drafts a cited letter** — if it's worth appealing. The model is told to end every sentence that relies on the policy with a `[cite:E#]` marker, and step 6 enforces it.
-6. **Verifies the letter in code.** A quote matcher (not an LLM) checks every cited quote against the actual policy text: it tolerates typos and PDF noise, but a quote whose numbers or polarity words differ from the source ("shall **not** be excluded", 48 → 24 months) fails. A sentence that states policy terms without a citation, or uses a citation format the parser doesn't recognise, also fails. Failures trigger a redraft; whatever still fails after 2 redrafts is stripped before the letter is shown. The policy-claim check is a keyword heuristic, not a guarantee — see Limitations.
+6. **Verifies the letter in code.** A quote matcher (not an LLM) checks every cited quote against the actual policy text: it tolerates typos and PDF noise, but a quote whose numbers or polarity words differ from the source ("shall **not** be excluded", 48 → 24 months) fails. A sentence that states policy terms without a citation, or uses a citation format the parser doesn't recognise, also fails. Failures trigger a redraft; whatever still fails after 2 redrafts is stripped before the letter is shown, and if nothing verifiable is left the case ends in an error instead of showing an empty letter. The policy-claim check is a keyword heuristic, not a guarantee — see Limitations.
 7. **Red-teams itself.** A separate pass argues the insurer's best counter-case against the draft; a serious rebuttal triggers one more redraft round.
 8. **Routes and schedules.** Computes the real escalation path (insurer's Grievance Redressal Officer → IRDAI Bima Bharosa → Insurance Ombudsman) with real deadlines, and pauses for your approval before anything is considered "sent."
 
@@ -84,7 +84,7 @@ How to read this, honestly:
 - **These results predate the audit fixes** (`audit/AUDIT_REPORT.md`): the stricter quote check, the uncited-claim check and the verdict-aware question gate all changed behaviour after this run, so the numbers above need a fresh `pnpm eval` ×3 before they describe the current code.
 - **Regenerate** with `pnpm eval` (×3) then `pnpm eval:readme`. Quota and provider-outage failures are now recorded as `infraError` and reported separately rather than counted as wrong.
 
-Separately, the backend logic is tested offline: 285 tests (`pnpm test`), 86.57% statement / 90.22% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`.
+Separately, the backend logic is tested offline: 286 tests (`pnpm test`), 86.57% statement / 90.22% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`.
 
 ## Architecture
 

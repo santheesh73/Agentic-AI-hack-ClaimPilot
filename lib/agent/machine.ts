@@ -11,7 +11,7 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote, stripUnverified } from "./verify";
+import { matchQuote, stripUnverified, extractCites } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
@@ -645,6 +645,15 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
   // for -- sentences citing a failed id, and sentences with an unparsed
   // citation format or an uncited policy claim (short_id "UNCITED").
   const cleaned = stripUnverified(draft!.body_md, results);
+  // If nothing verifiable survives, there is no letter to approve: an empty
+  // or uncited "appeal" must not reach AWAITING_APPROVAL.
+  if (extractCites(cleaned).length === 0) {
+    await db.from("drafts").update({ verification: results.map((r) => (r.ok ? r : { ...r, stripped: true })) }).eq("id", draft!.id);
+    const message =
+      "Could not produce an appeal letter whose policy statements could all be verified against the policy text, even after redrafting.";
+    await setError(c.id, message);
+    return { state: "ERROR" };
+  }
   // Stripped citations stay recorded as failed (not silently flipped to ok),
   // so "citations verified" counts reflect what the model actually produced.
   const cleanedResults = results.map((r) => (r.ok ? r : { ...r, stripped: true }));
