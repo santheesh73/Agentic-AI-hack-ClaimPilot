@@ -59,4 +59,34 @@ describe("getEnv", () => {
     const second = getEnv();
     expect(second).toBe(first);
   });
+
+  it("passes when every var named in .env.example is filled in (deployment-readiness check)", () => {
+    // Mirrors .env.example's variable set exactly, with ANTHROPIC_API_KEY/
+    // MODEL_FAST/MODEL_STRONG left blank as .env.example itself leaves them --
+    // this is what "copy .env.example to .env.local and fill in the required
+    // ones" actually produces.
+    process.env = {
+      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+      LLM_PROVIDER: "google",
+      GEMINI_API_KEY: "a-real-key",
+      ANTHROPIC_API_KEY: "",
+      MODEL_FAST: "",
+      MODEL_STRONG: "",
+    } as unknown as NodeJS.ProcessEnv;
+    expect(() => getEnv()).not.toThrow();
+  });
+
+  it("fails with a readable error when .env.example is copied but left entirely blank", () => {
+    process.env = {
+      NEXT_PUBLIC_SUPABASE_URL: "",
+      SUPABASE_SERVICE_ROLE_KEY: "",
+      LLM_PROVIDER: "google",
+      GEMINI_API_KEY: "",
+      ANTHROPIC_API_KEY: "",
+      MODEL_FAST: "",
+      MODEL_STRONG: "",
+    } as unknown as NodeJS.ProcessEnv;
+    expect(() => getEnv()).toThrow(/NEXT_PUBLIC_SUPABASE_URL/);
+  });
 });

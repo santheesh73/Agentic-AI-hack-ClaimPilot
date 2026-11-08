@@ -20,15 +20,29 @@ Coverage (`npx vitest run --coverage`, scoped to `lib/agent/**`, `lib/ingest/**`
 
 A genuine, previously-undiscovered production bug was caught by this work: `lib/ingest/pdf.ts`'s `parsePdf()` crashed on a real Node `Buffer` (not just in tests — this hit `app/api/cases/sample/route.ts` and would have hit `pnpm eval` too), because `Buffer instanceof Uint8Array` is `true` even though `unpdf` explicitly rejects a real `Buffer`. Fixed; see git log.
 
+## Done since this doc was last updated (Phase 5)
+
+9. **CI workflows** — `.github/workflows/ci.yml` (every push/PR: typecheck via `next typegen && tsc --noEmit`, lint, `pnpm test:coverage` — fully offline, no secrets needed — build, coverage artifact upload) and `.github/workflows/eval.yml` (`workflow_dispatch` only, takes a provider input, needs repo secrets, never runs automatically). Both validated for YAML syntax (`python3 -c "import yaml; yaml.safe_load(...)"`); **not validated by an actual GitHub Actions run**, since that would require pushing to a repo with Actions enabled, which wasn't done from this sandbox.
+13. **`engines`/`.nvmrc`** — `package.json` now has `"engines": {"node": ">=22.0.0"}` and `.nvmrc` pins `22`, matching the Node version this whole project was actually built and tested against.
+
+Deployment-readiness checklist, each verified by an actual command, not assumed:
+
+- Clean `pnpm build` from a fresh `.next/` — ✅ (`rm -rf .next && pnpm build`).
+- `outputFileTracingIncludes` covers `samples/**` — ✅ (`next.config.ts`, and confirmed present in `route.js.nft.json` in an earlier session).
+- `maxDuration` set on every route that calls a model — ✅ (`grep -rl maxDuration app/api/` lists all 9 route files).
+- Env validation passes with only the `.env.example` variables filled in as instructed, and fails readably if left blank — ✅, now a real test (`tests/env.test.ts`), not just reasoning about it: two new cases simulate "copied `.env.example`, filled in the required ones" (passes) and "copied `.env.example`, left it all blank" (fails, naming `NEXT_PUBLIC_SUPABASE_URL` in the error).
+- `/api/health` works — ✅, tested with a mocked `getEnv`/DB (`tests/routes.misc.test.ts`); not hit over a real deployed URL (no deploy from this sandbox).
+- No secrets committed — ✅ (`git ls-files | grep '^\.env'` lists only `.env.example`).
+- Migrations folder complete — ✅, 3 files (`0001_init`, `0002_agent_events_provider`, `0003_step_lock`), all applied to the live project.
+- Node version pinned — ✅ (`engines` + `.nvmrc`, above).
+
 ## Still not implemented (time-boxed out of this session)
 
 5. **Rate limiting / abuse guards** (30 `/step`/min, 10 new cases/hour, `MAX_TOKENS_PER_CASE`) — not implemented. `lib/env.ts` already parses `MAX_TOKENS_PER_CASE` as an optional env var in anticipation of this, but nothing reads it yet.
-8. **12-case eval set, run ×3, `evals/results/*.json`, `scripts/update-readme-evals.ts`** — not implemented. Only the original 3 cases (A/B/C) exist, proven once (not three times) against the synthetic policy document — see `README.md`'s eval section for those actual numbers.
-9. **CI workflows** (`.github/workflows/ci.yml`, `eval.yml`) — not implemented.
+8. **12-case eval set, run ×3, `evals/results/*.json`, `scripts/update-readme-evals.ts`** — not implemented. Only the original 3 cases (A/B/C) exist, proven once (not three times) against the synthetic policy document — see `README.md`'s eval section for those actual numbers. (`evals/run.ts` now writes its results to `evals/results/<timestamp>-<provider>-<model>.json` in addition to the console table, ready for whenever a real run happens — this was added for `eval.yml`'s artifact upload to have real content, not yet exercised with real data.)
 10. **`gitleaks` scan over git history** — not run (tool availability unverified in this environment). The targeted check that *was* run and passed: grepped the built `.next/static` client bundle for both the Supabase service-role key and the Gemini API key after a fresh `pnpm build` — neither appears (see `docs/AUDIT.md`).
-11. **`scripts/check-schema.sql`** (diff the migrations folder against the live DB) — not written. All three migrations in `supabase/migrations/` (`0001_init`, `0002_agent_events_provider`, `0003_step_lock`) were applied to the live project via the Supabase MCP tool directly as they were written, so they should match, but no automated diff confirms this.
+11. **`scripts/check-schema.sql`** (diff the migrations folder against the live DB) — not written. All three migrations in `supabase/migrations/` were applied to the live project via the Supabase MCP tool directly as they were written, so they should match, but no automated diff confirms this.
 12. **`docs/RESUME.md`, `evals/README.md`, the full README rewrite per the hardening spec's §7 structure** — not done. The README still reflects the hackathon-era structure with incremental honest updates, not the recruiter/engineer-facing rewrite with mermaid diagrams and a script-populated eval block.
-13. **`engines`/`.nvmrc` pinning** — not done.
 
 ## Real bugs found and fixed this session (for context, not "remaining")
 
