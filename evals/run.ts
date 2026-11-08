@@ -109,6 +109,9 @@ async function runCase(evalCase: EvalCase) {
     case: evalCase.name,
     expected: evalCase.expected,
     got,
+    // The verdict can be right while the case still ends in ERROR (e.g. no
+    // quote verified, so no letter); recorded so that isn't counted as success.
+    finalState: finalCase?.state ?? "UNKNOWN",
     verifiedPct,
     steps,
     ms: Date.now() - start,
@@ -125,14 +128,14 @@ async function main() {
     try {
       results.push(await runCase(evalCase));
     } catch (err) {
-      results.push({ case: evalCase.name, expected: evalCase.expected, got: `ERROR: ${(err as Error).message}`, verifiedPct: 0, steps: 0, ms: 0, tokens: 0 });
+      results.push({ case: evalCase.name, expected: evalCase.expected, got: `ERROR: ${(err as Error).message}`, finalState: "ERROR", verifiedPct: 0, steps: 0, ms: 0, tokens: 0 });
     }
   }
 
-  console.log("\ncase | expected | got | citations verified % | steps | total ms | tokens");
-  console.log("-----|----------|-----|----------------------|-------|----------|-------");
+  console.log("\ncase | expected | got | final state | citations verified % | steps | total ms | tokens");
+  console.log("-----|----------|-----|-------------|----------------------|-------|----------|-------");
   for (const r of results) {
-    console.log(`${r.case} | ${r.expected} | ${r.got} | ${r.verifiedPct}% | ${r.steps} | ${r.ms} | ${r.tokens}`);
+    console.log(`${r.case} | ${r.expected} | ${r.got} | ${r.finalState} | ${r.verifiedPct}% | ${r.steps} | ${r.ms} | ${r.tokens}`);
   }
 
   const resultsDir = path.resolve(__dirname, "results");

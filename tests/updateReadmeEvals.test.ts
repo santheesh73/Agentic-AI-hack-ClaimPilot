@@ -26,7 +26,7 @@ describe("summarize", () => {
   const md = summarize(runs, ["evals/results/x.json"]);
 
   it("computes accuracy over every case-run", () => {
-    expect(md).toContain("**Verdict accuracy: 2/4 (50%)** across 2 case(s), of which 1 case-run(s) ended in an error.");
+    expect(md).toContain("**Verdict accuracy: 2/4 (50%)** across 2 case(s); 1 case-run(s) ended in an error.");
   });
 
   it("averages citations only over drafted runs", () => {
@@ -34,8 +34,8 @@ describe("summarize", () => {
   });
 
   it("writes one row per case with per-run results, median ms and mean tokens", () => {
-    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | 1/2 | 75% | 2000 | 300 |");
-    expect(md).toContain("| C | WEAK | WEAK, ERROR: boom | 1/2 | n/a | 1000 | 100 |");
+    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | ?, ? | 1/2 | 75% | 2000 | 300 |");
+    expect(md).toContain("| C | WEAK | WEAK, ERROR: boom | ?, ? | 1/2 | n/a | 1000 | 100 |");
   });
 
   it("names the date range, model and source files", () => {
@@ -43,6 +43,18 @@ describe("summarize", () => {
     expect(md).toContain("google / gemini-3.5-flash-lite");
     expect(md).toContain("2026-11-01 to 2026-11-02");
     expect(md).toContain("`evals/results/x.json`");
+  });
+
+  it("does not count a correct verdict that ended in ERROR as an end-to-end success", () => {
+    const withState = summarize([
+      run("2026-11-01T10:00:00Z", [
+        { ...r("A", "STRONG", "STRONG", 100), finalState: "AWAITING_APPROVAL" },
+        { ...r("B", "STRONG", "STRONG", 0), finalState: "ERROR" },
+      ]),
+    ]);
+    expect(withState).toContain("**Verdict accuracy: 2/2 (100%)** across 2 case(s); 1 case-run(s) ended in an error.");
+    expect(withState).toContain("**Correct verdict and no error: 1/2 (50%).**");
+    expect(withState).toContain("| B | STRONG | STRONG | ERROR | 1/1 |");
   });
 
   it("refuses to summarize nothing", () => {

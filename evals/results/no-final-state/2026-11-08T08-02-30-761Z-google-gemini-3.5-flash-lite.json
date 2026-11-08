@@ -1,0 +1,116 @@
+{
+  "ranAt": "2026-11-08T08:02:30.761Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 32555,
+      "tokens": 9181
+    },
+    {
+      "case": "case_b_non_disclosure_missing_diagnosis_date",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 31531,
+      "tokens": 10938
+    },
+    {
+      "case": "case_c_cosmetic_surgery_explicit_exclusion",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 18901,
+      "tokens": 5227
+    },
+    {
+      "case": "case_d_30day_wait_but_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 25050,
+      "tokens": 7945
+    },
+    {
+      "case": "case_e_30day_wait_illness_genuine",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 16203,
+      "tokens": 4343
+    },
+    {
+      "case": "case_f_hernia_within_24_months",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 14720,
+      "tokens": 3698
+    },
+    {
+      "case": "case_g_cataract_waiting_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 30455,
+      "tokens": 9598
+    },
+    {
+      "case": "case_h_ped_portability_credit",
+      "expected": "STRONG",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 19570,
+      "tokens": 4627
+    },
+    {
+      "case": "case_i_ped_waiting_not_completed",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 18574,
+      "tokens": 4140
+    },
+    {
+      "case": "case_j_adventure_sport_amateur",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 49557,
+      "tokens": 7574
+    },
+    {
+      "case": "case_k_reconstruction_after_burns",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 32517,
+      "tokens": 7625
+    },
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 22090,
+      "tokens": 7287
+    }
+  ]
+}
