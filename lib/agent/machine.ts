@@ -93,6 +93,24 @@ async function stepCount(caseId: string): Promise<number> {
   return count ?? 0;
 }
 
+/** MAX_TOKENS_PER_CASE, if set; read directly rather than via getEnv() so
+ * the budget stays optional and doesn't make every other var mandatory here. */
+export function tokenBudget(): number | null {
+  const raw = process.env.MAX_TOKENS_PER_CASE;
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+async function tokensUsed(caseId: string): Promise<number> {
+  const { data, error } = await supabaseAdmin()
+    .from("agent_events")
+    .select("tokens_in, tokens_out")
+    .eq("case_id", caseId);
+  if (error) throw error;
+  return (data ?? []).reduce((n, e) => n + (e.tokens_in ?? 0) + (e.tokens_out ?? 0), 0);
+}
+
 const STEP_LOCK_LEASE_MS = 60_000;
 
 /** Atomically claims the step lock: succeeds only if no lease is held, or the
@@ -152,6 +170,16 @@ async function runStepLocked(caseId: string): Promise<{ state: CaseState; error?
   if (steps >= MAX_STEPS) {
     await setError(caseId, "Step limit reached (20 steps).");
     return { state: "ERROR", error: "Step limit reached" };
+  }
+
+  const budget = tokenBudget();
+  if (budget != null) {
+    const used = await tokensUsed(caseId);
+    if (used >= budget) {
+      const message = `Token budget exceeded (${used} of ${budget} tokens used for this case).`;
+      await setError(caseId, message);
+      return { state: "ERROR", error: message };
+    }
   }
 
   try {

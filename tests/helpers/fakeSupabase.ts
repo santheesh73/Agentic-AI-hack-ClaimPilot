@@ -233,6 +233,19 @@ export function createFakeSupabase(db: FakeDb) {
         const data = fakeSearchPages(db, args.p_case as string, args.p_query as string, args.p_limit as number);
         return Promise.resolve({ data, error: null });
       }
+      if (fn === "bump_rate_limit") {
+        // Mirrors supabase/migrations/0004's upsert-and-compare semantics.
+        db.rate_limits ??= [];
+        const key = (r: Row) =>
+          r.owner_id === args.p_owner && r.bucket === args.p_bucket && r.window_start === args.p_window_start;
+        let row = db.rate_limits.find(key);
+        if (!row) {
+          row = { owner_id: args.p_owner, bucket: args.p_bucket, window_start: args.p_window_start, count: 0 };
+          db.rate_limits.push(row);
+        }
+        row.count = (row.count as number) + 1;
+        return Promise.resolve({ data: (row.count as number) <= (args.p_limit as number), error: null });
+      }
       return Promise.resolve({ data: null, error: new Error(`fakeSupabase: unsupported rpc ${fn}`) });
     },
     storage: {
