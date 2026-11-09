@@ -1,0 +1,9 @@
+{
+  "name": "heldout_q_30day_wait_cause_not_stated",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_q.txt",
+  "answers": {
+    "cause": "I was knocked off my motorcycle by a car on 15 October 2026. The fracture was caused by that road accident; the police FIR and the hospital casualty record confirm it."
+  },
+  "expected": "STRONG"
+}
