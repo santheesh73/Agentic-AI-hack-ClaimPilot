@@ -171,13 +171,74 @@ export function stripSentencesCiting(bodyMd: string, failedIds: string[]): strin
 // the model used a marker format we don't parse; it must not pass silently.
 const LEFTOVER_CITE_RE = /\bcite\b|\[E\d+\]/i;
 
-// Heuristic for a sentence that asserts something about the policy's terms.
-// Such a sentence must carry a recognized citation. Restating what the
-// insurer's rejection letter said is not a claim about the policy.
-const POLICY_CLAIM_RE =
-  /\b(clause|section|excl\s?\d+|exclusion|waiting period|continuous coverage|portability|sum insured|policy wording|as per the policy|under the policy|per the terms|the policy (?:states|provides|says|covers|excludes|defines|requires|stipulates|specifies|guarantees|allows|waives))\b/i;
-const REJECTION_RESTATEMENT_RE =
-  /\b(your letter|rejection letter|your (?:decision|communication)|you (?:have )?(?:rejected|repudiated)|claim (?:was|has been|stands) (?:rejected|repudiated)|repudiation)\b/i;
+// Heuristic for a sentence that asserts what the POLICY says. It flags only
+// explicit attributions to the policy text. Bare topic words such as
+// "portability", "continuous coverage" or "waiting period" are NOT enough:
+// they appear constantly in the insured's own facts ("I ported to this
+// policy ...") and flagging those strips true statements from the letter
+// (seen in the live eval: cases H, K and M).
+// A sentence needs a citation when it ASSERTS WHAT THE POLICY SAYS: an
+// explicit reference to the policy text (a clause/section/exclusion id, or
+// "the policy") together with a verb that states its content. Merely naming
+// a clause ("the invocation of Clause Excl01 is incorrect"), quoting a policy
+// number ("under Policy No. UGHI/..."), or recounting the insured's own
+// facts is not a claim about the policy's content.
+const POLICY_REF_RE = new RegExp(
+  [
+    String.raw`\b(?:clause|section|sec\.|excl\s?\d+)\s*\d*(?:\.\d+)?`,
+    String.raw`\b(?:as per|under|per|according to|in terms of|pursuant to)\s+the\s+(?:policy|policy wording|policy terms|terms of the policy)\b`,
+    String.raw`\bthe\s+(?:policy|policy wording|policy terms|insurance contract)\b`,
+  ].join("|"),
+  "i"
+);
+const CONTENT_VERB_RE = new RegExp(
+  [
+    String.raw`\b(?:provides?|states?|says?|covers?|excludes?|defines?|requires?|stipulates?|specifies|guarantees?|allows?|waives?|entitles?|obliges?|mandates?|permits?|prohibits?|promises?|ensures?)\b`,
+    String.raw`\b(?:does|do)\s+not\s+(?:cover|apply|constitute|exclude)\b`,
+    String.raw`\b(?:is|are|stands?|stand)\s+(?:not\s+)?(?:covered|excluded|payable|included|admissible|waived|credited|entitled)\b`,
+    String.raw`\b(?:shall|must)\b`,
+  ].join("|"),
+  "i"
+);
+// Verbs that assert a benefit for the insured. These override the
+// rejection-restatement exemption below.
+const STRONG_ASSERTION_RE = /\b(?:guarantees?|entitles?|waives?|obliges?|mandates?|promises?|ensures?|payable|credited|entitled)\b/i;
+// The model's typical unsupported conclusion about the policy's terms applied
+// to the facts. Exempt when it is the insured's own account or an attachment.
+const APPLIED_CONCLUSION_RE = new RegExp(
+  [
+    String.raw`\b(?:waiting period|exclusion)\b[^.!?]*\b(?:has|have)\s+(?:expired|ceased|lapsed|elapsed|been completed)\b`,
+    String.raw`\b(?:waiting period|exclusion)\b[^.!?]*\b(?:does not|do not|no longer)\s+appl(?:y|ies)\b`,
+  ].join("|"),
+  "i"
+);
+// Recounting what the insurer said or did.
+const RESTATES_REJECTION_RE = new RegExp(
+  [
+    String.raw`\b(?:was|were|been|stands?)\s+(?:\w+\s+)?(?:rejected|repudiated|denied|communicated)\b`,
+    String.raw`\brejected\s+(?:under|on|by|based|vide|citing)\b`,
+    String.raw`\b(?:rejection|repudiation|denial)\s+(?:of|was|dated|letter)\b`,
+    String.raw`\b(?:appeal|contest|challenge|dispute)\w*\s+(?:against\s+)?(?:the\s+|this\s+|our\s+|my\s+)?(?:rejection|decision|repudiation)\b`,
+    String.raw`\byour\s+(?:esteemed\s+)?(?:letter|decision|office)\b`,
+  ].join("|"),
+  "i"
+);
+const OWN_FACTS_OR_ATTACHMENT_RE = new RegExp(
+  [
+    String.raw`\b(?:documents?|copy|copies|enclosed|enclosure|attached|attachment|annexure|certificate|report|summary)\b`,
+    String.raw`^\s*(?:i|my|we|our)\b`,
+  ].join("|"),
+  "i"
+);
+
+function isUncitedPolicyClaim(sentence: string): boolean {
+  const assertsPolicyContent = POLICY_REF_RE.test(sentence) && CONTENT_VERB_RE.test(sentence);
+  if (assertsPolicyContent) {
+    // Recounting the rejection is exempt unless it also asserts a benefit.
+    return !RESTATES_REJECTION_RE.test(sentence) || STRONG_ASSERTION_RE.test(sentence);
+  }
+  return APPLIED_CONCLUSION_RE.test(sentence) && !OWN_FACTS_OR_ATTACHMENT_RE.test(sentence) && !RESTATES_REJECTION_RE.test(sentence);
+}
 
 export type UnverifiableSentence = { reason: "unparsed_citation" | "uncited_policy_claim"; sentence: string };
 
@@ -191,7 +252,7 @@ export function findUnverifiableSentences(bodyMd: string): UnverifiableSentence[
       const withoutMarkers = sentence.replace(CITE_RE, "");
       if (LEFTOVER_CITE_RE.test(withoutMarkers)) {
         found.push({ reason: "unparsed_citation", sentence });
-      } else if (extractCites(sentence).length === 0 && POLICY_CLAIM_RE.test(sentence) && !REJECTION_RESTATEMENT_RE.test(sentence)) {
+      } else if (extractCites(sentence).length === 0 && isUncitedPolicyClaim(sentence)) {
         found.push({ reason: "uncited_policy_claim", sentence });
       }
     }

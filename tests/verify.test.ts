@@ -172,6 +172,45 @@ describe("citation parsing (F-002)", () => {
   it("facts and requests without policy terms are not flagged", () => {
     expect(findUnverifiableSentences("I was admitted on 2 August 2026. Please settle the claim of Rs. 92,500.")).toEqual([]);
   });
+  // Regression: the live eval showed the first version of this check stripping
+  // true statements about the insured and their attachments from letters.
+  it.each([
+    "I ported to this policy on 01 March 2025 from Star Health without any break.",
+    "I had continuous coverage since 01 January 2021 under my previous insurer.",
+    "Prior insurance policy documents showing continuous coverage since 01 January 2021.",
+    "Portability approval documents.",
+    "Regarding this rejection, I would like to clarify that before this policy I was covered under my employer's group plan.",
+    "The claim was unfortunately rejected on 2020-10-20 on the grounds that expenses for cosmetic surgery are excluded.",
+    "My waiting period under the earlier policy had completed by then.",
+    "The discharge summary and the burns certificate are attached.",
+    "Subject: Appeal for reconsideration of claim no. CLM/2026/905120 under Policy No. UGHI/2026/0204417.",
+    "The claim for INR 148,000 was rejected on 2026-10-05 under Clause 4.2 (First 30-day Waiting Period) and Excl02, stating that treatment within 30 days is excluded.",
+    "I am writing to formally appeal the rejection of my claim under Clause 6.2.",
+    "Therefore, the invocation of Clause Excl01 for this hospitalization is incorrect.",
+    "The rejection was communicated stating that expenses for cosmetic surgery are excluded as per the policy.",
+  ])("does not flag the insured's own facts or attachments: %s", (sentence) => {
+    expect(findUnverifiableSentences(sentence)).toEqual([]);
+  });
+
+  it.each([
+    "Clause 9.4 of the policy also guarantees full reimbursement within 7 days.",
+    "As per the policy, all pre-existing conditions are covered after 12 months.",
+    "The policy waives all exclusions for senior citizens.",
+    "Section 7 provides a 90-day grace period.",
+    "The waiting period has expired.",
+    "The exclusion no longer applies to my case.",
+    "Excl03 does not cover this procedure.",
+    "I believe Clause 9.4 guarantees full payment within 7 days.",
+    "My documents confirm that Section 7 provides a 90-day grace period.",
+    "The rejection was wrong because the policy guarantees full reimbursement of all hospital bills.",
+  ])("still flags an uncited claim about the policy: %s", (sentence) => {
+    expect(findUnverifiableSentences(sentence).map((u) => u.reason)).toEqual(["uncited_policy_claim"]);
+  });
+
+  it("the same claims pass when they carry a recognized citation", () => {
+    expect(findUnverifiableSentences("The waiting period has expired. [cite:E1] The policy waives all exclusions. [cite:E2]")).toEqual([]);
+  });
+
   it("headings are not checked", () => expect(findUnverifiableSentences("# Appeal under Clause 4.1")).toEqual([]));
 });
 

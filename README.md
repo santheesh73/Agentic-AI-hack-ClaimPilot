@@ -3,7 +3,7 @@
 ClaimPilot is an AI agent that turns a rejected health insurance claim into a cited, self-verified appeal — with real escalation deadlines.
 
 [![CI](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml/badge.svg?branch=hardening)](https://github.com/santheesh73/Agentic-AI-hack-ClaimPilot/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-286%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-310%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-87%25%20statements-yellowgreen)
 ![Next.js](https://img.shields.io/badge/Next.js-16%20(App%20Router)-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
@@ -84,7 +84,7 @@ How to read this, honestly:
 - **These results predate the audit fixes** (`audit/AUDIT_REPORT.md`): the stricter quote check, the uncited-claim check and the verdict-aware question gate all changed behaviour after this run, so the numbers above need a fresh `pnpm eval` ×3 before they describe the current code.
 - **Regenerate** with `pnpm eval` (×3) then `pnpm eval:readme`. Quota and provider-outage failures are now recorded as `infraError` and reported separately rather than counted as wrong.
 
-Separately, the backend logic is tested offline: 286 tests (`pnpm test`), 86.57% statement / 90.22% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`.
+Separately, the backend logic is tested offline: 310 tests (`pnpm test`), 86.57% statement / 90.22% line coverage (`pnpm test:coverage`) across `lib/agent/**`, `lib/ingest/**`, `app/api/**`.
 
 ## Architecture
 
@@ -277,7 +277,7 @@ docs/                 ARCHITECTURE.md, AI_DISCLOSURE.md, AUDIT.md, KNOWN_ISSUES.
 - **Not legal advice.** ClaimPilot does not file anything on your behalf.
 - **No OCR.** A scanned, image-only PDF is rejected with a clear message, not silently mishandled.
 - **Tested on one insurer's policy wording** (and currently an authored stand-in for it, not the real document — see `docs/AI_DISCLOSURE.md`), with 16 synthetic, deliberately clear-cut cases.
-- **The uncited-claim check is a heuristic.** It flags sentences that mention clauses, sections, exclusions, waiting periods and similar policy terms without a citation. A policy claim phrased without any of those words can still slip through, and an innocent sentence that mentions them can be stripped.
+- **The uncited-claim check is a heuristic.** It flags a sentence that both refers to the policy text (a clause/section/exclusion id, or "the policy") and asserts what it says ("provides", "guarantees", "is excluded", ...) without a citation, plus the unsupported conclusion "the waiting period has expired". It deliberately ignores policy numbers, the insured's own facts, attachment lists and recounting of the insurer's rejection, because an earlier, broader version stripped true statements from letters in the live eval. The cost is that a policy claim phrased without a clause or policy reference, or one that recounts the rejection while asserting content, can slip through.
 - **Escalation rules are "as of" a stated date** (2026-10-31) and will drift as IRDAI/Ombudsman procedure changes.
 - **LLM non-determinism.** The same case can produce slightly different rubric wording between runs; stability across repeated runs hasn't been measured yet (would need the 12-case ×3 eval — see `docs/KNOWN_ISSUES.md`).
 
