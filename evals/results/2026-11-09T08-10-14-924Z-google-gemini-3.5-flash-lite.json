@@ -1,0 +1,168 @@
+{
+  "ranAt": "2026-11-09T08:10:14.924Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 44731,
+      "tokens": 7996
+    },
+    {
+      "case": "case_b_non_disclosure_missing_diagnosis_date",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 61163,
+      "tokens": 7302
+    },
+    {
+      "case": "case_c_cosmetic_surgery_explicit_exclusion",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 36600,
+      "tokens": 5493
+    },
+    {
+      "case": "case_d_30day_wait_but_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 11,
+      "ms": 50587,
+      "tokens": 9806
+    },
+    {
+      "case": "case_e_30day_wait_illness_genuine",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 22401,
+      "tokens": 7844
+    },
+    {
+      "case": "case_f_hernia_within_24_months",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 21611,
+      "tokens": 7923
+    },
+    {
+      "case": "case_g_cataract_waiting_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 37444,
+      "tokens": 10205
+    },
+    {
+      "case": "case_h_ped_portability_credit",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 40918,
+      "tokens": 13608
+    },
+    {
+      "case": "case_i_ped_waiting_not_completed",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 24908,
+      "tokens": 8998
+    },
+    {
+      "case": "case_j_adventure_sport_amateur",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 41358,
+      "tokens": 7718
+    },
+    {
+      "case": "case_k_reconstruction_after_burns",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 31844,
+      "tokens": 5914
+    },
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 30571,
+      "tokens": 7627
+    },
+    {
+      "case": "heldout_m_ped_ported_from_group_cover",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 35825,
+      "tokens": 13040
+    },
+    {
+      "case": "heldout_n_condition_first_diagnosed_after_start",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 37878,
+      "tokens": 7446
+    },
+    {
+      "case": "heldout_o_joint_replacement_after_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 32933,
+      "tokens": 12292
+    },
+    {
+      "case": "heldout_p_portability_with_break_in_cover",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 23630,
+      "tokens": 7902
+    }
+  ]
+}

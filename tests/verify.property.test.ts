@@ -100,7 +100,7 @@ describe("matchQuote property tests (against the real samples/policy.pdf)", () =
       }),
       { numRuns: 100 }
     );
-  });
+  }, 30_000); // 100 sliding-window searches took ~5 s on a CI runner, right at vitest's 5 s default
 
   // Audit F-001: a fuzzy match may absorb typos, but never a change of meaning.
   it("a typo that leaves numbers and polarity words intact still verifies", () => {
