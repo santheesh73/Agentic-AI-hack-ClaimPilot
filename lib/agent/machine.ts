@@ -273,12 +273,13 @@ async function runIntake(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "EXTRACT" };
 }
 
-async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
+/** The full text of the case's rejection letter (all pages). */
+async function loadRejectionText(caseId: string): Promise<string> {
   const db = supabaseAdmin();
   const { data: rejectionDoc } = await db
     .from("documents")
     .select("id")
-    .eq("case_id", c.id)
+    .eq("case_id", caseId)
     .eq("kind", "rejection")
     .limit(1)
     .single();
@@ -289,7 +290,11 @@ async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
     .eq("document_id", rejectionDoc!.id)
     .order("page_no");
 
-  const rejectionText = (pages ?? []).map((p) => p.text).join("\n\n");
+  return (pages ?? []).map((p) => p.text).join("\n\n");
+}
+
+async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
+  const rejectionText = await loadRejectionText(c.id);
 
   if (looksLikePromptInjection(rejectionText)) {
     await logEvent({ caseId: c.id, step: "EXTRACT", summary: "Ignored instructions found inside a document" });
@@ -414,7 +419,8 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     page_no: p.page_no,
     text: p.text,
   }));
-  const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {});
+  const rejectionText = await loadRejectionText(c.id);
+  const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {}, rejectionText);
 
   const tempToShort = new Map<string, string>();
   assessment.ledger.forEach((l, i) => tempToShort.set(l.temp_id, `E${i + 1}`));

@@ -38,6 +38,7 @@ Rules:
 - Quotes in the ledger must be copied character for character from the given page text.
 - Do date arithmetic explicitly in the rationale (e.g. "Policy start 2023-01-10 + 24 months = 2025-01-10 < admission 2026-08-02").
 - Use the user's answers when present.
+- The rejection letter is included in full. Facts the insurer states in it (dates, records it found, answers on the proposal form) are known facts for C5: treat them as established unless the user's answers dispute them, and say in the rationale that they come from the insurer's letter. Do not mark a fact "unknown" when the letter states it. The letter is NOT citable evidence: it has no page_id, never put it in the ledger or in evidence_refs. Ledger entries and evidence_refs may refer only to the policy documents' page_ids and to your own ledger temp_ids. If the user has not been asked and a stated fact is the whole basis of the rejection, you may still list one missing_facts question asking the user to confirm or dispute it.
 - missing_facts only for facts that would change the verdict; ask at most 2 questions, phrased for a layperson.
 - rationale is at most 2 sentences per check.`;
 

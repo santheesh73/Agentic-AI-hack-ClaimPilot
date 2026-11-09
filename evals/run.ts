@@ -131,7 +131,13 @@ async function runCase(evalCase: EvalCase) {
 
 async function main() {
   const casesDir = path.resolve(__dirname, "cases");
-  const files = fs.readdirSync(casesDir).filter((f) => f.endsWith(".json"));
+  let files = fs.readdirSync(casesDir).filter((f) => f.endsWith(".json"));
+  // EVAL_CASES=l,m runs only cases whose file name (without .json) is listed.
+  // Such a partial run is written to evals/results/partial/ so that
+  // `pnpm eval:readme` (which reads evals/results/*.json) never mixes it in.
+  const only = (process.env.EVAL_CASES ?? "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+  if (only.length) files = files.filter((f) => only.includes(f.replace(/\.json$/, "").toLowerCase()));
+  if (!files.length) throw new Error(`EVAL_CASES=${process.env.EVAL_CASES} matched no case files in evals/cases/`);
   const results = [];
   for (const file of files) {
     const evalCase: EvalCase = JSON.parse(fs.readFileSync(path.join(casesDir, file), "utf-8"));
@@ -148,7 +154,7 @@ async function main() {
     console.log(`${r.case} | ${r.expected} | ${r.got} | ${r.finalState} | ${r.verifiedPct}% | ${r.steps} | ${r.ms} | ${r.tokens}`);
   }
 
-  const resultsDir = path.resolve(__dirname, "results");
+  const resultsDir = path.resolve(__dirname, "results", only.length ? "partial" : "");
   fs.mkdirSync(resultsDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const provider = process.env.LLM_PROVIDER ?? "google";
