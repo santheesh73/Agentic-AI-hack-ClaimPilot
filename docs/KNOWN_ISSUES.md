@@ -69,4 +69,6 @@ See `git log` on `hardening` for full detail: the `.update().order().limit()` Po
 
 **Still open (Medium/Low):** see the report's batches B and C — notably layered SDK retries (F-010), lease expiry (F-011), approve/simulate races (F-012), injection scanning of policy pages (F-013), security headers (F-014), IST dates (F-015), verifier performance on long pages (F-016), Indic-script PDFs (F-017), accessibility and mobile layout (F-022, F-023).
 
-**Not re-measured:** the eval results in the README predate these fixes; re-run `pnpm eval` ×3.
+**Re-measured after the fixes:** 3 complete runs × 16 cases, 46/48 verdicts correct (case L 1/3), 100% of citations verified on 32 drafts. See the README. The first post-fix run exposed an over-aggressive uncited-claim check (true sentences stripped in cases H, K, M); it was narrowed and re-run.
+
+**Open design decision — case L:** a provisional STRONG never triggers the ask-the-user question (F-005 design). When the model wrongly reads facts as unknown and answers STRONG, the question that would correct it is skipped. Option: also ask when the provisional verdict is STRONG but C5 is not `yes`. Cost: one extra question on some clear STRONG cases. Not changed, because tuning it against one development case would overfit; decide, then re-run the eval ×3.
