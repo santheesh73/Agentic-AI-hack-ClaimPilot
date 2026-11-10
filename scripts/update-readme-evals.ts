@@ -16,6 +16,8 @@ export type EvalResult = {
   got: string;
   /** Absent in result files written before it was recorded. */
   finalState?: string;
+  /** True if the exception-clause safeguard paused the case to ask the user. Absent in older result files. */
+  askedException?: boolean;
   /** Set when the case failed for infrastructure reasons (quota, outage). */
   infraError?: string;
   verifiedPct: number;
@@ -87,6 +89,15 @@ export function summarize(runs: EvalRun[], sourceFiles: string[] = []): string {
   if (infra) {
     lines.push(`${infra} case-run(s) excluded because they failed for infrastructure reasons (API quota or provider outage), not on ClaimPilot's judgment.`);
   }
+  const hasAsk = all.every((r) => r.askedException !== undefined);
+  if (hasAsk) {
+    const askedRuns = all.filter((r) => r.askedException);
+    const askedCases = [...new Set(askedRuns.map((r) => r.case))].sort();
+    lines.push(
+      `**Cost of the exception safeguard: ${askedRuns.length} of ${all.length} case-runs (${Math.round((100 * askedRuns.length) / all.length)}%) paused to ask one extra question**` +
+        (askedCases.length ? `, in ${askedCases.length} case(s): ${askedCases.map((c) => `\`${c}\``).join(", ")}.` : ".")
+    );
+  }
   if (hasState) {
     lines.push(
       `**Correct verdict and no error: ${endToEnd}/${all.length} (${Math.round((100 * endToEnd) / all.length)}%).**`
@@ -96,14 +107,14 @@ export function summarize(runs: EvalRun[], sourceFiles: string[] = []): string {
     lines.push(`Mean citations verified, over the ${drafted.length} case-run(s) that produced a draft: ${mean(drafted.map((r) => r.verifiedPct))}%.`);
   }
   lines.push("");
-  lines.push("| Case | Expected | Got (per run) | Final state (per run) | Correct | Citations verified | Median ms | Mean tokens |");
-  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- |");
+  lines.push("| Case | Expected | Got (per run) | Final state (per run) | Correct | Asked exception question | Citations verified | Median ms | Mean tokens |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
   for (const [name, rs] of [...byCase.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const ok = rs.filter((r) => r.got === r.expected).length;
     const draftedRuns = rs.filter((r) => r.verifiedPct > 0);
     const cites = draftedRuns.length ? `${mean(draftedRuns.map((r) => r.verifiedPct))}% (${draftedRuns.length} drafted)` : "n/a";
     lines.push(
-      `| ${name} | ${rs[0].expected} | ${rs.map((r) => r.got).join(", ")} | ${rs.map((r) => r.finalState ?? "?").join(", ")} | ${ok}/${rs.length} | ${cites} | ${median(rs.map((r) => r.ms))} | ${mean(rs.map((r) => r.tokens))} |`
+      `| ${name} | ${rs[0].expected} | ${rs.map((r) => r.got).join(", ")} | ${rs.map((r) => r.finalState ?? "?").join(", ")} | ${ok}/${rs.length} | ${rs.every((r) => r.askedException === undefined) ? "?" : `${rs.filter((r) => r.askedException).length}/${rs.length}`} | ${cites} | ${median(rs.map((r) => r.ms))} | ${mean(rs.map((r) => r.tokens))} |`
     );
   }
   if (sourceFiles.length) {
