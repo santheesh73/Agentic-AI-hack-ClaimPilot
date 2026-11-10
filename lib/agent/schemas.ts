@@ -87,3 +87,20 @@ export const PlainExplanation = z.object({
   explanation: z.string(),
 });
 export type PlainExplanation = z.infer<typeof PlainExplanation>;
+
+export const ExceptionReview = z.object({
+  exceptions: z.array(
+    z.object({
+      /** The circumstance in which the exclusion does NOT apply, in plain language. */
+      condition: z.string(),
+      /** Does this exception concern the treatment/claim at hand (not some other item in the same clause)? */
+      relevant: z.boolean(),
+      status: z.enum(["applies", "does_not_apply", "not_established"]),
+      /** Verbatim from the rejection letter or the user's answers; required unless status is not_established. */
+      basis_quote: z.string().nullable(),
+    })
+  ),
+  /** One plain yes/no question about the single most important unresolved exception, or null if none. */
+  question: z.string().nullable(),
+});
+export type ExceptionReview = z.infer<typeof ExceptionReview>;

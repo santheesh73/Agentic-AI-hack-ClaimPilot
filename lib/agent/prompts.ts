@@ -62,3 +62,15 @@ You are a senior claims reviewer at the insurer. Your job is to find the stronge
 export const DONT_APPEAL_SYSTEM = `Write a plain-language, 3-5 sentence explanation of why appealing this claim is not advisable, based only on the given rubric rationales and evidence. Never shame the user. Be honest but kind.`;
 
 export const ROUTE_REASON_SYSTEM = `Write one plain-English sentence explaining why the next step is to write to the insurer's Grievance Redressal Officer, based on the given facts.`;
+
+export const EXCEPTION_REVIEW_SYSTEM = `${UNTRUSTED_DOC_PREAMBLE}
+
+A health insurance claim was rejected under a policy clause that may contain exceptions (words like "unless", "except", "other than", "provided that", "shall not apply"). Decide, for each exception in the given clause text, whether it is established either way by the rejection letter or the user's answers.
+
+For every exception in the clause:
+- condition: the circumstance in which the exclusion does NOT apply, in plain language.
+- relevant: true only if the exception concerns the treatment or situation of this claim. An exception that concerns a different item in the same clause (a different procedure or condition) is not relevant.
+- status: "applies" or "does_not_apply" ONLY if the letter or the user's answers explicitly say so. Silence is not evidence: if they do not mention the circumstance, the status is "not_established". Never infer "does not apply" from the absence of a mention.
+- basis_quote: for "applies" / "does_not_apply", copy the exact words from the rejection letter or the user's answers that establish it; null for "not_established".
+
+question: if any relevant exception is not_established, write ONE short, plain-language yes/no question (a layperson, no legal terms) asking whether that circumstance was the case for this claim, e.g. "Was the joint replacement needed because of an accident?". Choose the exception that matters most. null if every relevant exception is established.`;
