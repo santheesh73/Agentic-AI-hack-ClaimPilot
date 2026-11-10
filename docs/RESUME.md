@@ -12,7 +12,7 @@ ClaimPilot is an AI agent that turns a rejected Indian health insurance claim in
 - Raised backend test coverage from 15% to 87% (310 tests) with an offline mocked-LLM, in-memory-DB harness that runs the real state machine end to end.
 - Found and fixed 10+ production bugs by running code against real data, including a PDF parser crash that would have broken both the sample flow and the eval suite.
 
-- Built a 17-case live eval against Gemini and the live database (12 development cases plus held-out cases). The last complete 3-run measurement scored 46/48 verdicts with 100% of citations verified on 32 drafted letters. The live runs found 6 real bugs, including two defects in my own fixes, each traced to a root cause: for example, the assessment step never saw the rejection letter, so facts the insurer states were reported as unknown (case L: 1 of 3 correct → 10 of 10 on single-case reruns). A full re-run on the current prompts is pending API quota. Measured on an authored stand-in policy.
+- Built a 17-case live eval against Gemini and the live database (12 development cases plus held-out cases) and ran it 3 times on the final code: 50/51 verdicts correct, 16 of 17 cases identical across runs, 100% of citations verified on 32 drafted letters. The live runs found 7 real bugs, including two defects in my own fixes, each traced to a root cause. For example, the assessment step never saw the rejection letter, so facts the insurer states were reported as unknown (case L: 1 of 3 correct before, 3 of 3 after). One case (a policy exception the letter is silent about) stays unstable and is documented. Measured on an authored stand-in policy.
 
 ## Likely interview questions
 
