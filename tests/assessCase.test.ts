@@ -3,7 +3,8 @@ import { describe, it, expect, vi } from "vitest";
 // Audit/eval finding (case L): the assessment step only saw a short extracted
 // summary, so facts the insurer states in the letter were invisible to it and
 // were reported as "unknown". The letter must reach the model.
-const generate = vi.fn(async (_args: unknown) => ({ checks: [], ledger: [], missing_facts: [] }));
+const generate = vi.fn();
+generate.mockResolvedValue({ checks: [], ledger: [], missing_facts: [] });
 vi.mock("../lib/models", async (importOriginal) => ({ ...(await importOriginal<typeof import("../lib/models")>()), generate }));
 
 const FACTS = {

@@ -14,6 +14,15 @@ import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
 import { matchQuote, stripUnverified, extractCites } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
+import { exceptionReview } from "./tools/exceptionReview";
+import {
+  EXCEPTION_ANSWER_KEY,
+  EXCEPTION_OPTIONS,
+  clauseTextFor,
+  findExceptionMarkers,
+  firstUnresolvedException,
+  isNotSure,
+} from "./exceptions";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
 
 export const STATES = [
@@ -49,7 +58,7 @@ export type CaseRow = {
   queries: string[] | null;
   candidate_page_ids: string[] | null;
   rubric: Check[] | null;
-  missing_facts: Array<{ key: string; question: string }> | null;
+  missing_facts: Array<{ key: string; question: string; options?: string[] }> | null;
   answers: Record<string, string> | null;
   verdict: Verdict | null;
   route: { step: string; addressee: string; reason: string } | null;
@@ -420,7 +429,7 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     text: p.text,
   }));
   const rejectionText = await loadRejectionText(c.id);
-  const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {}, rejectionText);
+  const assessment = await assessCase(c.id, c.facts!, candidatePages, answersWithQuestions(c), rejectionText);
 
   const tempToShort = new Map<string, string>();
   assessment.ledger.forEach((l, i) => tempToShort.set(l.temp_id, `E${i + 1}`));
@@ -521,8 +530,82 @@ export function decideVerdict(rubric: Check[]): Verdict {
   return "ARGUABLE";
 }
 
+/** The user's answers, each prefixed with the question it answers, so the model reads "Was it an accident? — Yes", not a bare key. */
+export function answersWithQuestions(c: Pick<CaseRow, "answers" | "missing_facts">): Record<string, string> {
+  const questions = new Map((c.missing_facts ?? []).map((mf) => [mf.key, mf.question]));
+  return Object.fromEntries(
+    Object.entries(c.answers ?? {}).map(([key, value]) => [key, questions.has(key) ? `${questions.get(key)} — ${value}` : value])
+  );
+}
+
+/**
+ * Before a case can end as DONT_APPEAL: if the clause text behind the WEAK
+ * verdict contains an exception marker and nothing explicitly establishes
+ * whether the exception applies, returns the one question to ask instead.
+ * Returns null when the case can proceed (no exception clause, or every
+ * relevant exception is established by a verifiable quote from the letter or
+ * the user's answers). See lib/agent/exceptions.ts.
+ */
+async function findUnresolvedExceptionQuestion(c: CaseRow): Promise<string | null> {
+  const db = supabaseAdmin();
+  const rubric = c.rubric ?? [];
+  const answerOf = (id: Check["id"]) => rubric.find((r) => r.id === id);
+  // The checks that drove the WEAK verdict: C4 if an explicit exclusion applies, else the cited clause (C1-C3).
+  const drivers = answerOf("C4_EXPLICIT_EXCLUSION")?.answer === "yes"
+    ? [answerOf("C4_EXPLICIT_EXCLUSION")!]
+    : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).map(answerOf).filter((x): x is Check => !!x);
+  const refs = new Set(drivers.flatMap((d) => d.evidence_refs));
+
+  const { evidence } = await loadEvidenceAndPages(c.id);
+  const verified = evidence.filter((e) => e.verified);
+  const behind = verified.filter((e) => refs.has(e.short_id));
+  const evidenceBehind = behind.length ? behind : verified; // no refs recorded: be conservative, look at all
+
+  const pageIds = [...new Set(evidenceBehind.map((e) => e.page_id))];
+  if (!pageIds.length) return null;
+  const { data: pages } = await db.from("pages").select("id, document_id, page_no, text").in("id", pageIds);
+  const clauseTexts = new Set<string>();
+  for (const e of evidenceBehind) {
+    const page = (pages ?? []).find((p) => p.id === e.page_id);
+    if (!page) continue;
+    const { data: next } = await db
+      .from("pages")
+      .select("text")
+      .eq("document_id", page.document_id)
+      .eq("page_no", page.page_no + 1)
+      .maybeSingle();
+    const text = clauseTextFor(page.text as string, e.quote, (next?.text as string | undefined) ?? undefined);
+    if (findExceptionMarkers(text).length) clauseTexts.add(text);
+  }
+  if (!clauseTexts.size) return null; // no exception clause: straight to the verdict, no extra question
+
+  const letter = await loadRejectionText(c.id);
+  const answers = answersWithQuestions(c);
+  const review = await exceptionReview(c.id, [...clauseTexts], letter, answers, c.facts!);
+  const unresolved = firstUnresolvedException(review.exceptions, [letter, ...Object.values(c.answers ?? {})]);
+  if (!unresolved) return null;
+  return review.question?.trim() || `Does this apply to your claim: ${unresolved.condition}?`;
+}
+
 async function runDecide(c: CaseRow): Promise<{ state: CaseState }> {
-  const verdict = decideVerdict(c.rubric ?? []);
+  let verdict = decideVerdict(c.rubric ?? []);
+  if (verdict === "WEAK") {
+    const answered = c.answers?.[EXCEPTION_ANSWER_KEY];
+    if (isNotSure(answered)) {
+      verdict = "ARGUABLE"; // the user can't rule the exception out: never tell them not to appeal
+    } else if (answered === undefined) {
+      const question = await findUnresolvedExceptionQuestion(c);
+      if (question) {
+        await updateCase(c.id, {
+          state: "AWAITING_USER",
+          verdict: null,
+          missing_facts: [{ key: EXCEPTION_ANSWER_KEY, question, options: [...EXCEPTION_OPTIONS] }],
+        });
+        await logEvent({ caseId: c.id, step: "DECIDE", summary: `Exception clause found — asking instead of assuming: ${question}` });
+        return { state: "AWAITING_USER" };
+      }
+    }
+  }
   const nextState: CaseState = verdict === "WEAK" ? "DONT_APPEAL" : "ROUTE";
   await updateCase(c.id, { state: nextState, verdict });
   await logEvent({ caseId: c.id, step: "DECIDE", summary: `Verdict: ${verdict}` });

@@ -1,0 +1,9 @@
+{
+  "name": "heldout_r_30day_illness_continuity_exception",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_r.txt",
+  "answers": {
+    "prior_cover": "Before this policy I was continuously insured from 01 January 2022 to 01 October 2026 under my employer's group health policy with no break in cover, and the insurer accepted continuity benefits when I joined this policy."
+  },
+  "expected": "STRONG"
+}

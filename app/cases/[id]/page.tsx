@@ -24,7 +24,7 @@ type Draft = {
   verification: Array<{ short_id: string; ok: boolean }> | null;
   redteam: RedTeamData;
 };
-type MissingFact = { key: string; question: string };
+type MissingFact = { key: string; question: string; options?: string[] };
 
 type CaseData = {
   case: {

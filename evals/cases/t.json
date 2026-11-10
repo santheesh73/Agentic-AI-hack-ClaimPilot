@@ -1,0 +1,6 @@
+{
+  "name": "heldout_t_exception_explicitly_ruled_out",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_t.txt",
+  "expected": "WEAK"
+}
