@@ -97,7 +97,7 @@ flowchart TB
     UI -->|fetch| Routes["Next.js route handlers<br/>app/api/cases/**"]
     Routes --> Ingest["lib/ingest/*<br/>PDF parsing, normalization"]
     Routes --> Orchestrator["lib/agent/machine.ts<br/>state machine + step lock"]
-    Orchestrator --> Tools["lib/agent/tools/*<br/>10 tools, one LLM entry point"]
+    Orchestrator --> Tools["lib/agent/tools/*<br/>11 tools, one LLM entry point"]
     Tools --> Models["lib/models.ts<br/>generate() -- retry, backoff, provider switch"]
     Models --> LLM["Anthropic or Google<br/>(LLM_PROVIDER)"]
     Orchestrator --> Verifier["lib/agent/verify.ts<br/>pure citation verifier"]
@@ -116,6 +116,7 @@ stateDiagram-v2
     RETRIEVE --> ASSESS
     ASSESS --> AWAITING_USER: C5 unknown/no + unanswered facts
     ASSESS --> DECIDE
+    DECIDE --> AWAITING_USER: WEAK verdict + unresolved exception clause
     AWAITING_USER --> ASSESS: user answers
     DECIDE --> DONT_APPEAL: verdict WEAK
     DECIDE --> ROUTE: verdict STRONG/ARGUABLE
@@ -148,6 +149,7 @@ stateDiagram-v2
 | `redteam_review` | Draft + policy pages → insurer's best counter-argument | strong |
 | `schedule_followup` | Route + sent date → follow-up rows | none |
 | `dont_appeal_explanation` | Rubric → plain-language "why not to appeal" for a WEAK verdict | fast |
+| `exception_review` | Clause text with an exception marker + letter + answers → which exceptions are established (with a verifiable quote) and one yes/no question; runs only when the code found a marker behind a WEAK verdict | strong |
 
 ### The six-check rubric
 
@@ -165,6 +167,9 @@ stateDiagram-v2
 - **ARGUABLE** otherwise.
 
 Before deciding, the case pauses to ask you a question only if one is open **and** its answer could change the outcome: always when the provisional verdict is ARGUABLE, when it is WEAK unless the facts are already known (a wrong "don't appeal" costs you a valid claim), and never when it is already STRONG (`needsUserInput`, exhaustively tested over all 18 combinations).
+
+### Ask, don't assume on exception clauses
+Before a case can end as "don't appeal", **code** (not the prompt) reads the whole policy clause behind the WEAK verdict and looks for an exception marker (`unless`, `except`, `other than`, `provided that`, `save where`, `shall not apply`, `excluding cases`; `EXCEPTION_MARKERS` in `lib/agent/exceptions.ts`). If one is there and nothing in the rejection letter or your answers explicitly establishes whether it applies, the case pauses and asks one plain yes / no / not-sure question ("Was the joint replacement needed because of an accident?") instead of assuming the exception doesn't apply. "Established" means the model supplied a quote that is verifiably present in the letter or your answers; "the facts do not indicate an accident" does not count. After your answer the case is re-assessed and decided normally; "not sure" can never end as "don't appeal"; the same question is never asked twice. Cost: some cases that would have ended as "don't appeal" now ask one extra question (measured in Results).
 
 ### Guardrails
 
