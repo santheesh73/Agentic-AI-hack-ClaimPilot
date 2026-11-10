@@ -1,0 +1,18 @@
+{
+  "ranAt": "2026-11-09T13:37:00.780Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "verifiedPct": 0,
+      "steps": 4,
+      "ms": 24730,
+      "tokens": 1032
+    }
+  ]
+}
