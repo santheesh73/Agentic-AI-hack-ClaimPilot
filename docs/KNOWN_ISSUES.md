@@ -71,4 +71,8 @@ See `git log` on `hardening` for full detail: the `.update().order().limit()` Po
 
 **Re-measured after the fixes:** 3 complete runs × 16 cases, 46/48 verdicts correct (case L 1/3), 100% of citations verified on 32 drafts. See the README. The first post-fix run exposed an over-aggressive uncited-claim check (true sentences stripped in cases H, K, M); it was narrowed and re-run.
 
-**Open design decision — case L:** a provisional STRONG never triggers the ask-the-user question (F-005 design). When the model wrongly reads facts as unknown and answers STRONG, the question that would correct it is skipped. Option: also ask when the provisional verdict is STRONG but C5 is not `yes`. Cost: one extra question on some clear STRONG cases. Not changed, because tuning it against one development case would overfit; decide, then re-run the eval ×3.
+**Case L — fixed at the root cause.** It was not the question gate: the assessment step never saw the rejection letter, so facts the insurer states in it were reported as unknown. The step now receives the letter (as a non-citable untrusted document), and L is WEAK in 10 of 10 single-case runs. The question-gate trade-off (a provisional STRONG never asks) therefore did not need changing, and was left as is.
+
+**Case O regression, partly open.** Giving the model the letter made it treat the letter's silence about an accident as "no accident". A general rule (silence is not evidence; an unresolved exception makes C5 unknown and requires a question) restored case O to STRONG in 3 of 4 runs, so one residual miss remains. Option if it persists: a code-level safeguard that asks the user whenever the clause behind a provisional WEAK verdict contains an exception word ("unless", "except") and no answer addresses it. Not built; decide after a full re-run.
+
+**Re-run needed:** a full 3-run eval of all 17 cases on the current prompts, blocked until the Gemini free-tier quota resets (or a paid key).
