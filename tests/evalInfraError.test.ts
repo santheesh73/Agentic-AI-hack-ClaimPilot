@@ -9,6 +9,8 @@ describe("infraErrorOf", () => {
     expect(infraErrorOf("429 Too Many Requests")).toBe("quota");
     expect(infraErrorOf("503 The model is overloaded")).toBe("provider_unavailable");
     expect(infraErrorOf("TypeError: fetch failed")).toBe("provider_unavailable");
+    // seen live: Gemini's overload message carries no status code or the word "overloaded"
+    expect(infraErrorOf("Failed after 3 attempts. Last error: AI_APICallError: This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.")).toBe("provider_unavailable");
   });
   it("does not excuse real pipeline errors", async () => {
     const { infraErrorOf } = await import("../evals/run");

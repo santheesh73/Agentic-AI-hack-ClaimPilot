@@ -58,7 +58,7 @@ async function createCaseHeadless(evalCase: EvalCase) {
 export function infraErrorOf(message: string | null | undefined): string | undefined {
   if (!message) return undefined;
   if (/exceeded your current quota|RESOURCE_EXHAUSTED|rate.?limit|\b429\b/i.test(message)) return "quota";
-  if (/\b(500|502|503|504)\b|overloaded|UNAVAILABLE|fetch failed|ECONNRESET|ETIMEDOUT/i.test(message)) return "provider_unavailable";
+  if (/\b(500|502|503|504)\b|overloaded|UNAVAILABLE|high demand|try again later|fetch failed|ECONNRESET|ETIMEDOUT/i.test(message)) return "provider_unavailable";
   return undefined;
 }
 
