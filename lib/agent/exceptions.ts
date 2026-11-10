@@ -25,7 +25,7 @@ export const EXCEPTION_MARKERS = [
 ] as const;
 
 const MARKER_RE = new RegExp(
-  `\\b(?:${EXCEPTION_MARKERS.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+")).join("|")})(?![\\w-])`,
+  `(?<![\\w-])(?:${EXCEPTION_MARKERS.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/ /g, "\\s+")).join("|")})(?![\\w-])`,
   "gi"
 );
 

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-type MissingFact = { key: string; question: string };
+type MissingFact = { key: string; question: string; options?: string[] };
 
 export function AskUserDialog({
   open,
@@ -39,12 +39,33 @@ export function AskUserDialog({
         <div className="space-y-4">
           {missingFacts.map((mf) => (
             <div key={mf.key} className="space-y-2">
-              <Label htmlFor={mf.key}>{mf.question}</Label>
-              <Input
-                id={mf.key}
-                value={values[mf.key] ?? ""}
-                onChange={(e) => setValues((v) => ({ ...v, [mf.key]: e.target.value }))}
-              />
+              {mf.options?.length ? (
+                // A fixed-choice question (e.g. yes / no / not sure): radios, not free text.
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">{mf.question}</legend>
+                  {mf.options.map((option) => (
+                    <label key={option} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name={mf.key}
+                        value={option}
+                        checked={values[mf.key] === option}
+                        onChange={() => setValues((v) => ({ ...v, [mf.key]: option }))}
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </fieldset>
+              ) : (
+                <>
+                  <Label htmlFor={mf.key}>{mf.question}</Label>
+                  <Input
+                    id={mf.key}
+                    value={values[mf.key] ?? ""}
+                    onChange={(e) => setValues((v) => ({ ...v, [mf.key]: e.target.value }))}
+                  />
+                </>
+              )}
             </div>
           ))}
         </div>
