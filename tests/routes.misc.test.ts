@@ -47,7 +47,7 @@ beforeEach(() => {
 describe("POST /api/cases/[id]/answer", () => {
   beforeEach(() => {
     fakeDb.cases = [
-      { id: "case-1", owner_id: "owner-1", state: "AWAITING_USER", answers: {} },
+      { id: "case-1", owner_id: "owner-1", state: "AWAITING_USER", answers: {}, missing_facts: [{ key: "diagnosis_date", question: "When was it diagnosed?" }] },
     ];
     fakeDb.agent_events = [];
   });
@@ -67,6 +67,27 @@ describe("POST /api/cases/[id]/answer", () => {
     const { POST } = await import("../app/api/cases/[id]/answer/route");
     const res = await POST(jsonRequest({}) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(400);
+  });
+
+  // Audit F-006: answers must never revive a terminal case or skip ahead.
+  it.each(["APPROVED", "DONT_APPEAL", "ERROR", "INTAKE", "AWAITING_APPROVAL"])(
+    "returns 409 and leaves a %s case untouched",
+    async (state) => {
+      fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state, answers: {} }];
+      const { POST } = await import("../app/api/cases/[id]/answer/route");
+      const res = await POST(jsonRequest({ answers: { a: "b" } }) as never, { params: Promise.resolve({ id: "case-1" }) });
+      expect(res.status).toBe(409);
+      expect((await res.json()).error.code).toBe("invalid_state");
+      expect(fakeDb.cases[0].state).toBe(state);
+      expect(fakeDb.cases[0].answers).toEqual({});
+    }
+  );
+
+  it("recordAnswers itself refuses a case that is not AWAITING_USER", async () => {
+    fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state: "APPROVED", answers: {} }];
+    const { recordAnswers, InvalidStateError } = await import("../lib/agent/machine");
+    await expect(recordAnswers("case-1", { a: "b" })).rejects.toBeInstanceOf(InvalidStateError);
+    expect(fakeDb.cases[0].state).toBe("APPROVED");
   });
 
   it("returns 404 for a nonexistent case", async () => {
@@ -94,7 +115,7 @@ describe("POST /api/cases/[id]/approve", () => {
     fakeDb.agent_events = [];
 
     const { POST } = await import("../app/api/cases/[id]/approve/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/approve", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(200);
 
     const updated = fakeDb.cases.find((c) => c.id === "case-1")!;
@@ -106,7 +127,7 @@ describe("POST /api/cases/[id]/approve", () => {
   it("rejects approving a case not in AWAITING_APPROVAL", async () => {
     fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state: "DRAFT" }];
     const { POST } = await import("../app/api/cases/[id]/approve/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/approve", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.code).toBe("invalid_state");

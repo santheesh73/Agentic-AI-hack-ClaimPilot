@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
 import { CreateCaseBody, parseJsonBody, errorResponse } from "@/lib/validation";
-import { enforceRateLimit } from "@/lib/rateLimit";
+import { enforceRequestLimits } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const body = await parseJsonBody(req, CreateCaseBody);
 
     const ownerId = await getOrCreateOwnerId();
-    await enforceRateLimit(ownerId, "newCase");
+    await enforceRequestLimits(req, ownerId, "newCase");
     const db = supabaseAdmin();
     const { data, error } = await db
       .from("cases")
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
 
-    if (error) return NextResponse.json({ error: { code: "db_error", message: error.message } }, { status: 500 });
+    if (error) throw error; // errorResponse() logs it and returns a generic 500
     return NextResponse.json({ id: data.id });
   } catch (err) {
     return errorResponse(err);

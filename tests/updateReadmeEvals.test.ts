@@ -34,8 +34,8 @@ describe("summarize", () => {
   });
 
   it("writes one row per case with per-run results, median ms and mean tokens", () => {
-    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | ?, ? | 1/2 | 75% (2 drafted) | 2000 | 300 |");
-    expect(md).toContain("| C | WEAK | WEAK, ERROR: boom | ?, ? | 1/2 | n/a | 1000 | 100 |");
+    expect(md).toContain("| A | STRONG | STRONG, ARGUABLE | ?, ? | 1/2 | ? | 75% (2 drafted) | 2000 | 300 |");
+    expect(md).toContain("| C | WEAK | WEAK, ERROR: boom | ?, ? | 1/2 | ? | n/a | 1000 | 100 |");
   });
 
   it("names the date range, model and source files", () => {
@@ -54,7 +54,32 @@ describe("summarize", () => {
     ]);
     expect(withState).toContain("**Verdict accuracy: 2/2 (100%)** across 2 case(s); 1 case-run(s) ended in an error.");
     expect(withState).toContain("**Correct verdict and no error: 1/2 (50%).**");
-    expect(withState).toContain("| B | STRONG | STRONG | ERROR | 1/1 |");
+    expect(withState).toContain("| B | STRONG | STRONG | ERROR | 1/1 | ? |");
+  });
+
+  it("excludes infrastructure failures from accuracy and reports them separately", () => {
+    const md = summarize([
+      run("2026-11-01T10:00:00Z", [
+        { ...r("A", "STRONG", "STRONG", 100), finalState: "AWAITING_APPROVAL" },
+        { ...r("B", "WEAK", "ERROR"), finalState: "ERROR", infraError: "quota" },
+      ]),
+    ]);
+    expect(md).toContain("**Verdict accuracy: 1/1 (100%)** across 1 case(s).");
+    expect(md).toContain("1 case-run(s) excluded because they failed for infrastructure reasons");
+    expect(md).not.toContain("| B |");
+  });
+
+  it("reports how many case-runs paused for the exception question (the cost of the safeguard)", () => {
+    const md = summarize([
+      run("2026-11-01T10:00:00Z", [
+        { ...r("A", "STRONG", "STRONG", 100), finalState: "AWAITING_APPROVAL", askedException: true },
+        { ...r("B", "WEAK", "WEAK"), finalState: "DONT_APPEAL", askedException: false },
+        { ...r("C", "WEAK", "WEAK"), finalState: "DONT_APPEAL", askedException: false },
+      ]),
+    ]);
+    expect(md).toContain("**Cost of the exception safeguard: 1 of 3 case-runs (33%) paused to ask one extra question**, in 1 case(s): `A`.");
+    expect(md).toContain("| A | STRONG | STRONG | AWAITING_APPROVAL | 1/1 | 1/1 |");
+    expect(md).toContain("| B | WEAK | WEAK | DONT_APPEAL | 1/1 | 0/1 |");
   });
 
   it("refuses to summarize nothing", () => {

@@ -1,0 +1,195 @@
+{
+  "ranAt": "2026-11-09T14:35:30.863Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 23458,
+      "tokens": 0
+    },
+    {
+      "case": "case_b_non_disclosure_missing_diagnosis_date",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 21590,
+      "tokens": 0
+    },
+    {
+      "case": "case_c_cosmetic_surgery_explicit_exclusion",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22733,
+      "tokens": 0
+    },
+    {
+      "case": "case_d_30day_wait_but_accident",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22644,
+      "tokens": 0
+    },
+    {
+      "case": "case_e_30day_wait_illness_genuine",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 24665,
+      "tokens": 0
+    },
+    {
+      "case": "case_f_hernia_within_24_months",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 24506,
+      "tokens": 0
+    },
+    {
+      "case": "case_g_cataract_waiting_completed",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22508,
+      "tokens": 0
+    },
+    {
+      "case": "case_h_ped_portability_credit",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22845,
+      "tokens": 0
+    },
+    {
+      "case": "case_i_ped_waiting_not_completed",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 23065,
+      "tokens": 0
+    },
+    {
+      "case": "case_j_adventure_sport_amateur",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22289,
+      "tokens": 0
+    },
+    {
+      "case": "case_k_reconstruction_after_burns",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22787,
+      "tokens": 0
+    },
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 21933,
+      "tokens": 0
+    },
+    {
+      "case": "heldout_m_ped_ported_from_group_cover",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22624,
+      "tokens": 0
+    },
+    {
+      "case": "heldout_n_condition_first_diagnosed_after_start",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22951,
+      "tokens": 0
+    },
+    {
+      "case": "heldout_o_joint_replacement_after_accident",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 23080,
+      "tokens": 0
+    },
+    {
+      "case": "heldout_p_portability_with_break_in_cover",
+      "expected": "WEAK",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 22475,
+      "tokens": 0
+    },
+    {
+      "case": "heldout_q_30day_wait_cause_not_stated",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 23008,
+      "tokens": 0
+    }
+  ]
+}

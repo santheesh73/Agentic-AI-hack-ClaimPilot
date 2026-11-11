@@ -12,15 +12,23 @@ type Draft = { version: number; body_md: string };
 export default function LetterPage() {
   const { id } = useParams<{ id: string }>();
   const [bodyMd, setBodyMd] = useState<string | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "nodraft" | "error">("loading");
 
   useEffect(() => {
     (async () => {
-      const res = await fetch(`/api/cases/${id}`);
-      const data = await res.json();
+      let data;
+      try {
+        const res = await fetch(`/api/cases/${id}`);
+        if (res.status === 404) return setStatus("missing");
+        if (!res.ok) return setStatus("error");
+        data = await res.json();
+      } catch {
+        return setStatus("error");
+      }
       const drafts: Draft[] = data.drafts ?? [];
       const evidence: Evidence[] = data.evidence ?? [];
       const latest = drafts[drafts.length - 1];
-      if (!latest) return;
+      if (!latest) return setStatus("nodraft");
 
       const rendered = replaceCites(latest.body_md, (ids) => {
         const pageNos = [...new Set(
@@ -31,6 +39,7 @@ export default function LetterPage() {
         return pageNos.length ? `(Policy p. ${pageNos.join(", ")})` : "";
       });
       setBodyMd(rendered);
+      setStatus("ready");
     })();
   }, [id]);
 
@@ -40,7 +49,16 @@ export default function LetterPage() {
         <Button onClick={() => window.print()}>Print / Save as PDF</Button>
       </div>
       <div className="mx-auto bg-white shadow-sm my-4 p-[2cm] w-[21cm] min-h-[29.7cm] print:shadow-none print:m-0 print:w-auto print:min-h-0 prose">
-        {bodyMd ? <ReactMarkdown>{bodyMd}</ReactMarkdown> : <p>Loading…</p>}
+        {bodyMd ? (
+          <ReactMarkdown>{bodyMd}</ReactMarkdown>
+        ) : (
+          <p role={status === "loading" ? undefined : "alert"}>
+            {status === "loading" && "Loading…"}
+            {status === "missing" && "This case was not found. It may have been deleted, or it belongs to another browser."}
+            {status === "nodraft" && "There is no letter yet. Run the case until it reaches approval."}
+            {status === "error" && "The letter could not be loaded. Please try again."}
+          </p>
+        )}
       </div>
       <style>{`
         @media print {

@@ -46,9 +46,14 @@ function addCalendarMonths(d: Date, months: number): Date {
   return new Date(Date.UTC(targetYear, targetMonth, clampedDay));
 }
 
-/** now = today + sim_offset_days, as an ISO date string. */
+/** The calendar date in India (IST, UTC+5:30) of an instant, as yyyy-mm-dd. */
+export function istDate(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+}
+
+/** now = today (IST calendar date) + sim_offset_days, as an ISO date string. Using IST avoids recording the previous day for approvals between 00:00 and 05:30 IST. */
 export function simNow(simOffsetDays: number, today: Date = new Date()): string {
-  return toISO(addDays(today, simOffsetDays));
+  return toISO(addDays(parseISO(istDate(today)), simOffsetDays));
 }
 
 /** Before a complaint is sent, the only route is the insurer's GRO. */
@@ -57,43 +62,63 @@ export function chooseRoute(insurer: string | null): Route {
 }
 
 /**
+ * The last date to file with the Insurance Ombudsman (rule OMB_1YEAR): one
+ * year from the insurer's reply/rejection of the complaint, or one year from
+ * the end of the one-month no-reply period -- whichever applies first. When
+ * the reply date is unknown, only the no-reply date can be computed, and it
+ * must be presented as conditional (it is the LATEST possible date).
+ */
+export function ombudsmanLastDate(sentOn: string, repliedOn?: string | null): string {
+  const noReplyDeadline = addCalendarMonths(parseISO(sentOn), 1 + 12);
+  if (!repliedOn) return toISO(noReplyDeadline);
+  const replyDeadline = addCalendarMonths(parseISO(repliedOn), 12);
+  return toISO(replyDeadline < noReplyDeadline ? replyDeadline : noReplyDeadline);
+}
+
+/**
  * Builds the follow-up schedule once a GRO complaint is sent on `sentOn`
- * (ISO date). Pure function; `claimAmountInr` gates Ombudsman eligibility.
+ * (ISO date). Pure function; `claimAmountInr` gates Ombudsman eligibility:
+ * above the Rs 50 lakh cap no Ombudsman eligibility/deadline rows are
+ * produced at all, only the "not available" row.
  */
 export function scheduleFollowups(
   sentOn: string,
-  claimAmountInr: number | null
+  claimAmountInr: number | null,
+  repliedOn?: string | null
 ): Array<{ due_on: string; action: string; rule_id: string }> {
   const sent = parseISO(sentOn);
 
   const escalateBimaBharosa = toISO(addDays(sent, 14));
   const ombudsmanEligible = toISO(addCalendarMonths(sent, 1));
-  const ombudsmanLastDate = toISO(addCalendarMonths(addDays(sent, 0), 1 + 12));
 
-  const followups = [
-    { due_on: escalateBimaBharosa, action: "ESCALATE_BIMA_BHAROSA", rule_id: "GRO_14D" },
-    { due_on: ombudsmanEligible, action: "OMBUDSMAN_ELIGIBLE", rule_id: "OMB_ELIGIBLE" },
-    { due_on: ombudsmanLastDate, action: "OMBUDSMAN_LAST_DATE", rule_id: "OMB_1YEAR" },
-  ];
+  const followups = [{ due_on: escalateBimaBharosa, action: "ESCALATE_BIMA_BHAROSA", rule_id: "GRO_14D" }];
 
-  if (claimAmountInr != null && claimAmountInr > OMBUDSMAN_CAP_INR) {
+  if (!isOmbudsmanEligibleByAmount(claimAmountInr)) {
     followups.push({ due_on: ombudsmanEligible, action: "OMBUDSMAN_INELIGIBLE_CAP", rule_id: "OMB_CAP" });
+    return followups;
   }
 
+  followups.push(
+    { due_on: ombudsmanEligible, action: "OMBUDSMAN_ELIGIBLE", rule_id: "OMB_ELIGIBLE" },
+    { due_on: ombudsmanLastDate(sentOn, repliedOn), action: repliedOn ? "OMBUDSMAN_LAST_DATE_AFTER_REPLY" : "OMBUDSMAN_LAST_DATE", rule_id: "OMB_1YEAR" }
+  );
   return followups;
 }
 
 /** UI-facing deadline list with human labels and source links. */
 export function deadlinesForUi(
   sentOn: string | null,
-  claimAmountInr: number | null
+  claimAmountInr: number | null,
+  repliedOn?: string | null
 ): Deadline[] {
   if (!sentOn) return [];
-  const followups = scheduleFollowups(sentOn, claimAmountInr);
+  const followups = scheduleFollowups(sentOn, claimAmountInr, repliedOn);
   const labels: Record<string, string> = {
     ESCALATE_BIMA_BHAROSA: "Escalate to IRDAI Bima Bharosa if unresolved",
-    OMBUDSMAN_ELIGIBLE: "Eligible to file with the Insurance Ombudsman",
-    OMBUDSMAN_LAST_DATE: "Last date to file with the Insurance Ombudsman",
+    OMBUDSMAN_ELIGIBLE: "Eligible to file with the Insurance Ombudsman (if the insurer rejects, replies unsatisfactorily, or does not reply)",
+    OMBUDSMAN_LAST_DATE:
+      "Last date to file with the Insurance Ombudsman IF THE INSURER DOES NOT REPLY. If they reply or reject, the deadline is 1 year from their reply, which is earlier.",
+    OMBUDSMAN_LAST_DATE_AFTER_REPLY: "Last date to file with the Insurance Ombudsman (1 year from the insurer's reply)",
     OMBUDSMAN_INELIGIBLE_CAP: "Ombudsman route not available (claim exceeds ₹50 lakh cap)",
   };
   return followups.map((f) => ({

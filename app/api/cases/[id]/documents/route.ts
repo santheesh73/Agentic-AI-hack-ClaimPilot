@@ -9,9 +9,11 @@ import {
   UPLOAD_MAX_BYTES,
   UPLOAD_MAX_PAGES,
   ApiError,
+  assertSameOrigin,
   errorResponse,
   notFoundResponse,
 } from "@/lib/validation";
+import { enforceRequestLimits } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -24,9 +26,15 @@ function hasPdfMagicBytes(buffer: ArrayBuffer): boolean {
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    assertSameOrigin(req);
     const { id } = await params;
     const caseRow = await getOwnedCase(id);
     if (!caseRow) return notFoundResponse();
+    // Documents are inputs to INTAKE; once the case has moved on (or finished) they would be silently ignored or rewrite history.
+    if (!["INTAKE", "ERROR"].includes(caseRow.state)) {
+      throw new ApiError(409, "invalid_state", "Documents can only be added before the case has been processed.");
+    }
+    await enforceRequestLimits(req, caseRow.owner_id, "upload");
 
     const form = await req.formData();
     const kindResult = DocumentKind.safeParse(form.get("kind"));
@@ -86,7 +94,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         );
       }
       filename = file.name;
-      storagePath = `${id}/${kind}-${Date.now()}-${file.name}`;
+      // The user's filename is kept only in documents.filename; the storage key is random so it can't be guessed or contain "../".
+      storagePath = `${id}/${kind}-${crypto.randomUUID()}.pdf`;
       const { error: uploadError } = await db.storage.from(DOCUMENTS_BUCKET).upload(storagePath, buffer, {
         contentType: "application/pdf",
         upsert: false,

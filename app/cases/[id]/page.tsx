@@ -24,7 +24,7 @@ type Draft = {
   verification: Array<{ short_id: string; ok: boolean }> | null;
   redteam: RedTeamData;
 };
-type MissingFact = { key: string; question: string };
+type MissingFact = { key: string; question: string; options?: string[] };
 
 type CaseData = {
   case: {
@@ -101,8 +101,15 @@ export default function CasePage() {
     try {
       for (;;) {
         const res = await fetch(`/api/cases/${id}/step`, { method: "POST" });
+        if (!res.ok) {
+          // Say why the loop stopped instead of silently going idle (409: another tab is running a step; 429: rate limit; 5xx).
+          const body = await res.json().catch(() => null);
+          toast.error(extractErrorMessage(body, "The case could not continue. Please try again."));
+          await fetchCase();
+          break;
+        }
         const fresh = await fetchCase();
-        if (!res.ok || PAUSE_OR_TERMINAL.has(fresh.case.state)) break;
+        if (PAUSE_OR_TERMINAL.has(fresh.case.state)) break;
       }
     } finally {
       runningRef.current = false;
@@ -190,18 +197,18 @@ export default function CasePage() {
   const { case: c, events, evidence, drafts, deadlines } = data;
 
   return (
-    <div className="flex flex-col flex-1">
+    <main className="flex flex-col flex-1">
       <div className="bg-accent text-accent-foreground text-center text-sm py-2">
         Draft for your review, not legal advice.
       </div>
 
-      <div className="flex items-center justify-between px-6 py-4 border-b">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b">
+        <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-semibold">Case</h1>
           <Badge variant="outline">{c.state}</Badge>
           {c.verdict && <VerdictBadge verdict={c.verdict} />}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {!isReplay && (
             <Button onClick={runLoop} disabled={running || PAUSE_OR_TERMINAL.has(c.state)}>
               {running ? "Running…" : "Run"}
@@ -261,7 +268,7 @@ export default function CasePage() {
           <CardHeader>
             <CardTitle className="text-sm">Trace</CardTitle>
           </CardHeader>
-          <CardContent className="max-h-[70vh] overflow-y-auto">
+          <CardContent className="max-h-[70vh] overflow-y-auto" tabIndex={0} role="region" aria-label="Agent trace">
             <Trace events={isReplay ? events.slice(0, revealCount) : events} />
           </CardContent>
         </Card>
@@ -270,7 +277,7 @@ export default function CasePage() {
           <CardHeader>
             <CardTitle className="text-sm">Assessment</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto" tabIndex={0} role="region" aria-label="Assessment and evidence">
             <RubricPanel rubric={c.rubric ?? []} />
             <Separator />
             <div className="space-y-2">
@@ -298,7 +305,7 @@ export default function CasePage() {
               </div>
             )}
           </CardHeader>
-          <CardContent className="max-h-[70vh] overflow-y-auto prose prose-sm space-y-4">
+          <CardContent className="max-h-[70vh] overflow-y-auto prose prose-sm space-y-4" tabIndex={0} role="region" aria-label="Appeal draft">
             {shownDraft ? (
               <>
                 <DraftView bodyMd={shownDraft.body_md} onCiteClick={scrollToEvidence} />
@@ -315,7 +322,7 @@ export default function CasePage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }
 

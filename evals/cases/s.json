@@ -1,0 +1,9 @@
+{
+  "name": "heldout_s_reconstruction_after_cancer_cause_not_stated",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_s.txt",
+  "answers": {
+    "cause": "The reconstruction followed my mastectomy for breast cancer on 03 July 2026. My treating oncologist and surgeon have certified in writing that the reconstruction is medically necessary."
+  },
+  "expected": "STRONG"
+}

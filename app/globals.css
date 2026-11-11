@@ -12,14 +12,14 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  --primary: #0d9488;
+  --primary: #0f766e; /* teal-700: 5.5:1 with white (teal-600 was 3.7:1) */
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --muted: #f8fafc;
   --muted-foreground: #64748b;
   --accent: #ecfdf5;
-  --accent-foreground: #0d9488;
+  --accent-foreground: #0f766e; /* 5.0:1 on --accent */
   --destructive: #dc2626;
   --border: #e2e8f0;
   --input: #e2e8f0;

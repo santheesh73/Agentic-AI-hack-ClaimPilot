@@ -1,0 +1,9 @@
+{
+  "name": "heldout_m_ped_ported_from_group_cover",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_m.txt",
+  "answers": {
+    "prior_cover": "Before this policy I was covered without a break from 01 April 2020 under my employer's group health policy with New India Assurance. When I left the job I ported to this policy on 01 July 2025 with no gap, and the insurer accepted the portability."
+  },
+  "expected": "STRONG"
+}

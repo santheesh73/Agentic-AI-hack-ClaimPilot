@@ -1,0 +1,9 @@
+{
+  "name": "heldout_n_condition_first_diagnosed_after_start",
+  "policy": "samples/policy.pdf",
+  "letter": "samples/letter_n.txt",
+  "answers": {
+    "diagnosis_date": "I had no kidney problems before the policy. Chronic kidney disease was first diagnosed by a nephrologist in May 2026, after routine blood tests; the diagnosis report is dated 14 May 2026."
+  },
+  "expected": "STRONG"
+}

@@ -48,7 +48,7 @@ describe("POST /api/cases", () => {
 
   it("returns 400 on malformed JSON", async () => {
     const { POST } = await import("../app/api/cases/route");
-    const req = new Request("http://localhost/test", { method: "POST", body: "{not json" });
+    const req = new Request("http://localhost/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{not json" });
     const res = await POST(req as never);
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -111,7 +111,7 @@ describe("POST /api/cases/[id]/step", () => {
     ];
     fakeDb.agent_events = [];
     const { POST } = await import("../app/api/cases/[id]/step/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/step", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(409);
     const json = await res.json();
     expect(json.error.code).toBe("step_in_progress");
@@ -121,7 +121,7 @@ describe("POST /api/cases/[id]/step", () => {
   it("returns 404 for a case owned by someone else", async () => {
     fakeDb.cases = [{ id: "case-1", owner_id: "owner-2", state: "INTAKE", step_lock_until: null }];
     const { POST } = await import("../app/api/cases/[id]/step/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/step", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(404);
   });
 });

@@ -11,9 +11,18 @@ import { verifyCitationsTool } from "./tools/verifyCitationsTool";
 import { redteamReview } from "./tools/redteamReview";
 import { dontAppealExplanation } from "./tools/dontAppealExplanation";
 import { scheduleFollowupTool } from "./tools/scheduleFollowupTool";
-import { matchQuote, stripSentencesCiting } from "./verify";
+import { matchQuote, stripUnverified, extractCites } from "./verify";
 import { simNow } from "./deadlines";
 import { looksLikePromptInjection } from "./prompts";
+import { exceptionReview } from "./tools/exceptionReview";
+import {
+  EXCEPTION_ANSWER_KEY,
+  EXCEPTION_OPTIONS,
+  clauseTextFor,
+  findExceptionMarkers,
+  firstUnresolvedException,
+  isNotSure,
+} from "./exceptions";
 import type { Check, RejectionFacts, Verdict } from "./schemas";
 
 export const STATES = [
@@ -49,7 +58,7 @@ export type CaseRow = {
   queries: string[] | null;
   candidate_page_ids: string[] | null;
   rubric: Check[] | null;
-  missing_facts: Array<{ key: string; question: string }> | null;
+  missing_facts: Array<{ key: string; question: string; options?: string[] }> | null;
   answers: Record<string, string> | null;
   verdict: Verdict | null;
   route: { step: string; addressee: string; reason: string } | null;
@@ -93,13 +102,19 @@ async function stepCount(caseId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** MAX_TOKENS_PER_CASE, if set; read directly rather than via getEnv() so
- * the budget stays optional and doesn't make every other var mandatory here. */
+/** Default per-case token cap, so a fresh deployment is protected even if
+ * MAX_TOKENS_PER_CASE is never set (audit F-007). The live eval's heaviest
+ * case used about 13k tokens, so this leaves ample headroom. */
+export const DEFAULT_MAX_TOKENS_PER_CASE = 60_000;
+
+/** Per-case token cap: MAX_TOKENS_PER_CASE if a positive integer, null
+ * (disabled) if explicitly "0", otherwise the default. Read directly rather
+ * than via getEnv() so the rest of the env stays optional here. */
 export function tokenBudget(): number | null {
-  const raw = process.env.MAX_TOKENS_PER_CASE;
-  if (!raw) return null;
+  const raw = process.env.MAX_TOKENS_PER_CASE?.trim();
+  if (raw === "0") return null;
   const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return raw && Number.isInteger(n) && n > 0 ? n : DEFAULT_MAX_TOKENS_PER_CASE;
 }
 
 async function tokensUsed(caseId: string): Promise<number> {
@@ -111,7 +126,9 @@ async function tokensUsed(caseId: string): Promise<number> {
   return (data ?? []).reduce((n, e) => n + (e.tokens_in ?? 0) + (e.tokens_out ?? 0), 0);
 }
 
-const STEP_LOCK_LEASE_MS = 60_000;
+// Longer than the worst-case step with our own retries (3 attempts x 30 s timeout + backoff), so a slow
+// step can't outlive its lease and be entered twice. Routes have maxDuration 60, so a killed step releases within the lease.
+const STEP_LOCK_LEASE_MS = 90_000;
 
 /** Atomically claims the step lock: succeeds only if no lease is held, or the
  * previous lease has expired. Prevents a double-click or two open tabs from
@@ -267,12 +284,13 @@ async function runIntake(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "EXTRACT" };
 }
 
-async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
+/** The full text of the case's rejection letter (all pages). */
+async function loadRejectionText(caseId: string): Promise<string> {
   const db = supabaseAdmin();
   const { data: rejectionDoc } = await db
     .from("documents")
     .select("id")
-    .eq("case_id", c.id)
+    .eq("case_id", caseId)
     .eq("kind", "rejection")
     .limit(1)
     .single();
@@ -283,7 +301,11 @@ async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
     .eq("document_id", rejectionDoc!.id)
     .order("page_no");
 
-  const rejectionText = (pages ?? []).map((p) => p.text).join("\n\n");
+  return (pages ?? []).map((p) => p.text).join("\n\n");
+}
+
+async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
+  const rejectionText = await loadRejectionText(c.id);
 
   if (looksLikePromptInjection(rejectionText)) {
     await logEvent({ caseId: c.id, step: "EXTRACT", summary: "Ignored instructions found inside a document" });
@@ -297,6 +319,23 @@ async function runExtract(c: CaseRow): Promise<{ state: CaseState }> {
     summary: `Extracted rejection: ${facts.clause_cited ?? facts.reason_category}, ₹${facts.claim_amount_inr ?? "?"}`,
   });
   return { state: "RETRIEVE" };
+}
+
+/** Patterns for the clause identifiers named in an insurer's citation, e.g.
+ * "Section 6 (Disclosure), Clause 6.2" -> /6.2/ and /Section 6/;
+ * "Excl01 (Pre-Existing Diseases)" -> /Excl01/ (also matches "Excl1"). */
+export function clauseRefs(clauseCited: string): RegExp[] {
+  const refs: RegExp[] = [];
+  for (const m of clauseCited.matchAll(/\bExcl\s*0*(\d{1,2})\b/gi)) {
+    refs.push(new RegExp(`\\bExcl\\s*0*${m[1]}\\b`, "i"));
+  }
+  for (const m of clauseCited.matchAll(/(?<![\d.])(\d{1,2}\.\d{1,2})(?![\d.])/g)) {
+    refs.push(new RegExp(`(?<![\\d.])${m[1].replace(".", "\\.")}(?![\\d])`));
+  }
+  for (const m of clauseCited.matchAll(/\bSection\s+(\d{1,2})\b/gi)) {
+    refs.push(new RegExp(`\\bSection\\s+${m[1]}\\b(?!\\.)`, "i"));
+  }
+  return refs;
 }
 
 async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
@@ -321,6 +360,16 @@ async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
     .from("pages")
     .select("id, page_no, text, document_id")
     .in("document_id", policyDocIds.length ? policyDocIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  // Full-text search can miss a clause cited by number ("Clause 6.2",
+  // "Excl01"), since websearch_to_tsquery tokenizes those poorly. Always
+  // include pages that literally contain the cited clause id, ranked first.
+  const refs = clauseRefs(facts.clause_cited ?? "");
+  for (const p of allPolicyPages ?? []) {
+    if (refs.some((re) => re.test(p.text as string))) {
+      byId.set(p.id, { id: p.id, page_no: p.page_no, rank: Number.MAX_SAFE_INTEGER });
+    }
+  }
 
   let extrasAdded = 0;
   for (const p of allPolicyPages ?? []) {
@@ -347,6 +396,28 @@ async function runRetrieve(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: "ASSESS" };
 }
 
+/** Verifies a ledger quote against the page the model attributed it to and,
+ * if it doesn't match there, against the other retrieved pages. Models
+ * sometimes copy a quote correctly but label it with a neighbouring page;
+ * the quote is still re-checked against real policy text, so this only
+ * fixes the page reference, never accepts text that isn't in the policy. */
+export function locateQuote(
+  quote: string,
+  statedPageId: string,
+  pages: Array<{ id: string; text_norm: string }>
+): { page_id: string; ok: boolean; score: number } {
+  const stated = pages.find((p) => p.id === statedPageId);
+  const first = stated ? matchQuote(quote, stated.text_norm) : { ok: false, score: 0 };
+  if (first.ok) return { page_id: statedPageId, ...first };
+  let best: { page_id: string; ok: boolean; score: number } | null = null;
+  for (const p of pages) {
+    if (p.id === statedPageId) continue;
+    const m = matchQuote(quote, p.text_norm);
+    if (m.ok && (!best || m.score > best.score)) best = { page_id: p.id, ...m };
+  }
+  return best ?? { page_id: statedPageId, ...first };
+}
+
 async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const { data: pages } = await db
@@ -359,22 +430,20 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     page_no: p.page_no,
     text: p.text,
   }));
-  const pageById = new Map((pages ?? []).map((p) => [p.id, p]));
-
-  const assessment = await assessCase(c.id, c.facts!, candidatePages, c.answers ?? {});
+  const rejectionText = await loadRejectionText(c.id);
+  const assessment = await assessCase(c.id, c.facts!, candidatePages, answersWithQuestions(c), rejectionText);
 
   const tempToShort = new Map<string, string>();
   assessment.ledger.forEach((l, i) => tempToShort.set(l.temp_id, `E${i + 1}`));
 
   const evidenceRows = assessment.ledger.map((l) => {
     const short_id = tempToShort.get(l.temp_id)!;
-    const page = pageById.get(l.page_id);
-    const { ok, score } = page ? matchQuote(l.quote, page.text_norm) : { ok: false, score: 0 };
+    const { page_id, ok, score } = locateQuote(l.quote, l.page_id, pages ?? []);
     return {
       case_id: c.id,
       short_id,
       claim: l.claim,
-      page_id: l.page_id,
+      page_id,
       quote: l.quote,
       match_score: score,
       verified: ok,
@@ -403,7 +472,9 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
   const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
-  const needsUser = needsUserInput(c5?.answer, unresolvedMissing.length > 0);
+  // The question is only worth the user's time if the answer could change
+  // the outcome: decide the provisional verdict first (audit F-005).
+  const needsUser = needsUserInput(decideVerdict(rubric), c5?.answer, unresolvedMissing.length > 0);
 
   const nextState: CaseState = needsUser ? "AWAITING_USER" : "DECIDE";
 
@@ -425,12 +496,24 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: nextState };
 }
 
-/** Whether the case should pause for AWAITING_USER rather than proceed to
- * DECIDE: the model couldn't confirm the facts it needs (C5 "unknown" or
- * "no" -- both mean "not known"), and there's at least one unanswered
- * missing-fact question. */
-export function needsUserInput(c5Answer: Check["answer"] | undefined, hasUnresolvedMissingFacts: boolean): boolean {
-  return (c5Answer === "unknown" || c5Answer === "no") && hasUnresolvedMissingFacts;
+/**
+ * Whether the case should pause for AWAITING_USER rather than proceed to
+ * DECIDE. Only when there are unanswered missing-fact questions AND an answer
+ * could still change the outcome:
+ *  - provisional verdict ARGUABLE: always ask (the design's rule);
+ *  - provisional verdict WEAK and C5 != yes: ask, because a wrong "don't
+ *    appeal" costs the user a valid claim, while asking costs one question;
+ *  - provisional verdict STRONG: never ask -- the appeal goes ahead anyway.
+ */
+export function needsUserInput(
+  provisionalVerdict: Verdict,
+  c5Answer: Check["answer"] | undefined,
+  hasUnresolvedMissingFacts: boolean
+): boolean {
+  if (!hasUnresolvedMissingFacts) return false;
+  if (provisionalVerdict === "ARGUABLE") return true;
+  if (provisionalVerdict === "WEAK") return c5Answer !== "yes";
+  return false;
 }
 
 export function decideVerdict(rubric: Check[]): Verdict {
@@ -449,8 +532,82 @@ export function decideVerdict(rubric: Check[]): Verdict {
   return "ARGUABLE";
 }
 
+/** The user's answers, each prefixed with the question it answers, so the model reads "Was it an accident? — Yes", not a bare key. */
+export function answersWithQuestions(c: Pick<CaseRow, "answers" | "missing_facts">): Record<string, string> {
+  const questions = new Map((c.missing_facts ?? []).map((mf) => [mf.key, mf.question]));
+  return Object.fromEntries(
+    Object.entries(c.answers ?? {}).map(([key, value]) => [key, questions.has(key) ? `${questions.get(key)} — ${value}` : value])
+  );
+}
+
+/**
+ * Before a case can end as DONT_APPEAL: if the clause text behind the WEAK
+ * verdict contains an exception marker and nothing explicitly establishes
+ * whether the exception applies, returns the one question to ask instead.
+ * Returns null when the case can proceed (no exception clause, or every
+ * relevant exception is established by a verifiable quote from the letter or
+ * the user's answers). See lib/agent/exceptions.ts.
+ */
+async function findUnresolvedExceptionQuestion(c: CaseRow): Promise<string | null> {
+  const db = supabaseAdmin();
+  const rubric = c.rubric ?? [];
+  const answerOf = (id: Check["id"]) => rubric.find((r) => r.id === id);
+  // The checks that drove the WEAK verdict: C4 if an explicit exclusion applies, else the cited clause (C1-C3).
+  const drivers = answerOf("C4_EXPLICIT_EXCLUSION")?.answer === "yes"
+    ? [answerOf("C4_EXPLICIT_EXCLUSION")!]
+    : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).map(answerOf).filter((x): x is Check => !!x);
+  const refs = new Set(drivers.flatMap((d) => d.evidence_refs));
+
+  const { evidence } = await loadEvidenceAndPages(c.id);
+  const verified = evidence.filter((e) => e.verified);
+  const behind = verified.filter((e) => refs.has(e.short_id));
+  const evidenceBehind = behind.length ? behind : verified; // no refs recorded: be conservative, look at all
+
+  const pageIds = [...new Set(evidenceBehind.map((e) => e.page_id))];
+  if (!pageIds.length) return null;
+  const { data: pages } = await db.from("pages").select("id, document_id, page_no, text").in("id", pageIds);
+  const clauseTexts = new Set<string>();
+  for (const e of evidenceBehind) {
+    const page = (pages ?? []).find((p) => p.id === e.page_id);
+    if (!page) continue;
+    const { data: next } = await db
+      .from("pages")
+      .select("text")
+      .eq("document_id", page.document_id)
+      .eq("page_no", page.page_no + 1)
+      .maybeSingle();
+    const text = clauseTextFor(page.text as string, e.quote, (next?.text as string | undefined) ?? undefined);
+    if (findExceptionMarkers(text).length) clauseTexts.add(text);
+  }
+  if (!clauseTexts.size) return null; // no exception clause: straight to the verdict, no extra question
+
+  const letter = await loadRejectionText(c.id);
+  const answers = answersWithQuestions(c);
+  const review = await exceptionReview(c.id, [...clauseTexts], letter, answers, c.facts!);
+  const unresolved = firstUnresolvedException(review.exceptions, [letter, ...Object.values(c.answers ?? {})]);
+  if (!unresolved) return null;
+  return review.question?.trim() || `Does this apply to your claim: ${unresolved.condition}?`;
+}
+
 async function runDecide(c: CaseRow): Promise<{ state: CaseState }> {
-  const verdict = decideVerdict(c.rubric ?? []);
+  let verdict = decideVerdict(c.rubric ?? []);
+  if (verdict === "WEAK") {
+    const answered = c.answers?.[EXCEPTION_ANSWER_KEY];
+    if (isNotSure(answered)) {
+      verdict = "ARGUABLE"; // the user can't rule the exception out: never tell them not to appeal
+    } else if (answered === undefined) {
+      const question = await findUnresolvedExceptionQuestion(c);
+      if (question) {
+        await updateCase(c.id, {
+          state: "AWAITING_USER",
+          verdict: null,
+          missing_facts: [{ key: EXCEPTION_ANSWER_KEY, question, options: [...EXCEPTION_OPTIONS] }],
+        });
+        await logEvent({ caseId: c.id, step: "DECIDE", summary: `Exception clause found — asking instead of assuming: ${question}` });
+        return { state: "AWAITING_USER" };
+      }
+    }
+  }
   const nextState: CaseState = verdict === "WEAK" ? "DONT_APPEAL" : "ROUTE";
   await updateCase(c.id, { state: nextState, verdict });
   await logEvent({ caseId: c.id, step: "DECIDE", summary: `Verdict: ${verdict}` });
@@ -559,7 +716,7 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     await logEvent({
       caseId: c.id,
       step: "VERIFY",
-      summary: `Verifier: ${results.length}/${results.length} citations matched.`,
+      summary: `Verifier: ${results.length}/${results.length} checks passed.`,
     });
     return { state: nextState };
   }
@@ -570,15 +727,27 @@ async function runVerify(c: CaseRow): Promise<{ state: CaseState }> {
     await logEvent({
       caseId: c.id,
       step: "VERIFY",
-      summary: `Verifier: ${results.length - failedIds.length}/${results.length} citations matched; redrafting.`,
+      summary: `Verifier: ${results.length - failedIds.length}/${results.length} checks passed; redrafting.`,
     });
     return { state: "DRAFT" };
   }
 
-  const cleaned = stripSentencesCiting(draft!.body_md, failedIds);
+  // Redraft budget spent: remove everything verification could not vouch
+  // for -- sentences citing a failed id, and sentences with an unparsed
+  // citation format or an uncited policy claim (short_id "UNCITED").
+  const cleaned = stripUnverified(draft!.body_md, results);
+  // If nothing verifiable survives, there is no letter to approve: an empty
+  // or uncited "appeal" must not reach AWAITING_APPROVAL.
+  if (extractCites(cleaned).length === 0) {
+    await db.from("drafts").update({ verification: results.map((r) => (r.ok ? r : { ...r, stripped: true })) }).eq("id", draft!.id);
+    const message =
+      "Could not produce an appeal letter whose policy statements could all be verified against the policy text, even after redrafting.";
+    await setError(c.id, message);
+    return { state: "ERROR" };
+  }
   // Stripped citations stay recorded as failed (not silently flipped to ok),
   // so "citations verified" counts reflect what the model actually produced.
-  const cleanedResults = results.map((r) => (failedIds.includes(r.short_id) ? { ...r, ok: false, stripped: true } : r));
+  const cleanedResults = results.map((r) => (r.ok ? r : { ...r, stripped: true }));
   await db
     .from("drafts")
     .update({ body_md: cleaned, verification: cleanedResults, verified_at: new Date().toISOString() })
@@ -639,11 +808,31 @@ async function runRedteam(c: CaseRow): Promise<{ state: CaseState }> {
   return { state: nextState };
 }
 
-/** POST /answer handler support: records answers and resumes at ASSESS. */
+export class InvalidStateError extends Error {
+  constructor(public state: CaseState, public expected: CaseState = "AWAITING_USER") {
+    super(`Case is in state ${state}, not ${expected}.`);
+  }
+}
+
+/**
+ * POST /answer handler support: records answers and resumes at ASSESS.
+ * Only valid while the case is AWAITING_USER. The transition is a
+ * conditional update, so a terminal case (APPROVED, DONT_APPEAL, ERROR) or a
+ * case that hasn't been assessed yet can never be pushed back into ASSESS.
+ */
 export async function recordAnswers(caseId: string, answers: Record<string, string>) {
   const c = await getCase(caseId);
+  if (c.state !== "AWAITING_USER") throw new InvalidStateError(c.state);
   const merged = { ...(c.answers ?? {}), ...answers };
-  await updateCase(caseId, { state: "ASSESS", answers: merged });
+  const db = supabaseAdmin();
+  const { data, error } = await db
+    .from("cases")
+    .update({ state: "ASSESS", answers: merged, updated_at: new Date().toISOString() })
+    .eq("id", caseId)
+    .eq("state", "AWAITING_USER")
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new InvalidStateError((await getCase(caseId)).state);
   await logEvent({ caseId, step: "AWAITING_USER", summary: "User answered missing-fact questions; resuming assessment." });
 }
 
@@ -651,8 +840,16 @@ export async function recordAnswers(caseId: string, answers: Record<string, stri
 export async function approveCase(caseId: string) {
   const c = await getCase(caseId);
   const sentOn = simNow(c.sim_offset_days);
-  await updateCase(caseId, { state: "APPROVED", complaint_sent_on: sentOn });
   const db = supabaseAdmin();
+  // Claim the transition atomically: of two concurrent approvals only one wins, so follow-ups are scheduled once.
+  const { data: claimed, error: claimError } = await db
+    .from("cases")
+    .update({ state: "APPROVED", complaint_sent_on: sentOn, updated_at: new Date().toISOString() })
+    .eq("id", caseId)
+    .eq("state", "AWAITING_APPROVAL")
+    .select("id");
+  if (claimError) throw claimError;
+  if (!claimed || claimed.length === 0) throw new InvalidStateError((await getCase(caseId)).state, "AWAITING_APPROVAL");
   const { data: latestDraft } = await db
     .from("drafts")
     .select("id")

@@ -5,7 +5,7 @@ import { supabaseAdmin, getOrCreateOwnerId } from "@/lib/db";
 import { parsePdf } from "@/lib/ingest/pdf";
 import { normalize } from "@/lib/ingest/normalize";
 import { SampleBody, parseJsonBody, errorResponse, ApiError } from "@/lib/validation";
-import { enforceRateLimit } from "@/lib/rateLimit";
+import { enforceRequestLimits } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ownerId = await getOrCreateOwnerId();
-    await enforceRateLimit(ownerId, "newCase");
+    await enforceRequestLimits(req, ownerId, "newCase");
     const db = supabaseAdmin();
 
     const { data: caseRow, error: caseError } = await db

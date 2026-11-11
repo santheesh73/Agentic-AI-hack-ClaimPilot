@@ -1,0 +1,52 @@
+{
+  "ranAt": "2026-11-10T13:40:52.351Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "heldout_o_joint_replacement_after_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": true,
+      "verifiedPct": 100,
+      "steps": 11,
+      "ms": 96866,
+      "tokens": 15656
+    },
+    {
+      "case": "heldout_r_30day_illness_continuity_exception",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 76141,
+      "tokens": 13241
+    },
+    {
+      "case": "heldout_s_reconstruction_after_cancer_cause_not_stated",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 11,
+      "ms": 84572,
+      "tokens": 7722
+    },
+    {
+      "case": "heldout_t_exception_explicitly_ruled_out",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 42367,
+      "tokens": 5958
+    }
+  ]
+}

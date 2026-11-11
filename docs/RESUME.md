@@ -9,10 +9,10 @@ ClaimPilot is an AI agent that turns a rejected Indian health insurance claim in
 ## Resume bullets
 
 - Built an AI claim-appeal agent (Next.js, Postgres FTS, Vercel AI SDK) whose verdict comes from a code-level rubric, not the model, and whose citations are fuzzy-matched against source text.
-- Raised backend test coverage from 15% to 85% (209 tests) with an offline mocked-LLM, in-memory-DB harness that runs the real state machine end to end.
+- Raised backend test coverage from 15% to 87% (310 tests) with an offline mocked-LLM, in-memory-DB harness that runs the real state machine end to end.
 - Found and fixed 10+ production bugs by running code against real data, including a PDF parser crash that would have broken both the sample flow and the eval suite.
 
-- Built a 12-case live eval run 3× against Gemini and the live database: 89% verdict accuracy (32/36), 83% with no pipeline error, and 100% of citations verified in every drafted letter. The live runs also found 4 real bugs, which I fixed (see README Results; measured on an authored stand-in policy, not the real insurer document).
+- Built a 20-case live eval against Gemini and the live database. Before the final safeguard, 3 complete runs scored 50/51 verdicts with 100% of citations verified on 32 drafts; the live runs found 7 real bugs, including two defects in my own fixes, each traced to a root cause (e.g. the assessment step never saw the rejection letter, so facts the insurer states were reported as unknown). Built a code-level 'ask, don't assume on exception clauses' safeguard (marker detector, clause extraction, quote-verified resolution, yes/no/not-sure question) with 371 offline tests; one live pass of 20 cases scored 19/19 valid verdicts at a cost of 1 extra question in 19 case-runs (stability re-run pending API quota). Measured on an authored stand-in policy.
 
 ## Likely interview questions
 
