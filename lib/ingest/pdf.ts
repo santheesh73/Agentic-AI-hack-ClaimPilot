@@ -1,5 +1,5 @@
 import { extractText } from "unpdf";
-import { normalize } from "./normalize";
+import { normalize, stripControlChars } from "./normalize";
 
 export type ParsedPage = { page_no: number; text: string; text_norm: string };
 
@@ -24,7 +24,7 @@ export async function parsePdf(buffer: ArrayBuffer | Uint8Array): Promise<Parsed
   const texts = Array.isArray(text) ? text : [text];
   return texts.map((t, i) => ({
     page_no: i + 1,
-    text: t,
+    text: stripControlChars(t),
     text_norm: normalize(t),
   }));
 }

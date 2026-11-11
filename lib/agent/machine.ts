@@ -126,7 +126,9 @@ async function tokensUsed(caseId: string): Promise<number> {
   return (data ?? []).reduce((n, e) => n + (e.tokens_in ?? 0) + (e.tokens_out ?? 0), 0);
 }
 
-const STEP_LOCK_LEASE_MS = 60_000;
+// Longer than the worst-case step with our own retries (3 attempts x 30 s timeout + backoff), so a slow
+// step can't outlive its lease and be entered twice. Routes have maxDuration 60, so a killed step releases within the lease.
+const STEP_LOCK_LEASE_MS = 90_000;
 
 /** Atomically claims the step lock: succeeds only if no lease is held, or the
  * previous lease has expired. Prevents a double-click or two open tabs from

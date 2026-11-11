@@ -148,3 +148,17 @@ describe("simNow", () => {
     expect(simNow(0, new Date("2026-03-10T12:00:00Z"))).toBe("2026-03-10");
   });
 });
+
+// Audit F-015: the complaint date is the calendar date in India, not in UTC.
+describe("simNow uses the IST calendar date", () => {
+  it("23:00 UTC is already the next day in India", () => {
+    expect(simNow(0, new Date("2026-03-31T23:00:00Z"))).toBe("2026-04-01");
+  });
+  it("18:29 UTC is still the same day in India; 18:30 UTC is the next", () => {
+    expect(simNow(0, new Date("2026-03-31T18:29:00Z"))).toBe("2026-03-31");
+    expect(simNow(0, new Date("2026-03-31T18:30:00Z"))).toBe("2026-04-01");
+  });
+  it("adds the simulation offset to the IST date", () => {
+    expect(simNow(15, new Date("2026-12-20T23:00:00Z"))).toBe("2027-01-05");
+  });
+});
