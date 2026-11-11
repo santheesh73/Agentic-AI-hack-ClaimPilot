@@ -8,7 +8,7 @@ import { verifyCitationsTool } from "@/lib/agent/tools/verifyCitationsTool";
 import { stripUnverified } from "@/lib/agent/verify";
 import { UNTRUSTED_DOC_PREAMBLE } from "@/lib/agent/prompts";
 import { enforceRequestLimits } from "@/lib/rateLimit";
-import { SimulateBody, parseJsonBody, errorResponse, notFoundResponse } from "@/lib/validation";
+import { ApiError, SimulateBody, parseJsonBody, errorResponse, notFoundResponse } from "@/lib/validation";
 
 export const maxDuration = 60;
 
@@ -30,7 +30,18 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
 
   const db = supabaseAdmin();
   const newOffset = caseRow.sim_offset_days + days;
-  await db.from("cases").update({ sim_offset_days: newOffset }).eq("id", id);
+  // Compare-and-set on the offset we read: of two concurrent simulations one wins, the other is told to retry
+  // (otherwise both write the same offset and one +N days is silently lost).
+  const { data: bumped, error: bumpError } = await db
+    .from("cases")
+    .update({ sim_offset_days: newOffset })
+    .eq("id", id)
+    .eq("sim_offset_days", caseRow.sim_offset_days)
+    .select("id");
+  if (bumpError) throw bumpError;
+  if (!bumped || bumped.length === 0) {
+    throw new ApiError(409, "simulation_in_progress", "Another simulation just changed this case. Please try again.");
+  }
 
   const now = simNow(newOffset);
   const { data: due } = await db
@@ -40,7 +51,17 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
     .eq("status", "pending")
     .lte("due_on", now);
 
+  let fired = 0;
   for (const fu of due ?? []) {
+    // Claim the follow-up before doing any work so two requests can't both fire (and both pay for) the same escalation.
+    const { data: claimed } = await db
+      .from("followups")
+      .update({ status: "fired" })
+      .eq("id", fu.id)
+      .eq("status", "pending")
+      .select("id");
+    if (!claimed || claimed.length === 0) continue;
+    fired++;
     let outputMd: string | null = null;
 
     if (fu.action === "ESCALATE_BIMA_BHAROSA") {
@@ -73,7 +94,7 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
       outputMd = stripUnverified(draft.body_md, results);
     }
 
-    await db.from("followups").update({ status: "fired", output_md: outputMd }).eq("id", fu.id);
+    await db.from("followups").update({ output_md: outputMd }).eq("id", fu.id);
     await logEvent({
       caseId: id,
       step: "SIMULATE",
@@ -81,5 +102,5 @@ async function handle(req: NextRequest, params: Promise<{ id: string }>) {
     });
   }
 
-  return NextResponse.json({ sim_offset_days: newOffset, fired: due?.length ?? 0 });
+  return NextResponse.json({ sim_offset_days: newOffset, fired });
 }

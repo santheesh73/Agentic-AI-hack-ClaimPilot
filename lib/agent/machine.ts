@@ -809,8 +809,8 @@ async function runRedteam(c: CaseRow): Promise<{ state: CaseState }> {
 }
 
 export class InvalidStateError extends Error {
-  constructor(public state: CaseState) {
-    super(`Case is in state ${state}, not AWAITING_USER; answers are only accepted while the case is waiting for them.`);
+  constructor(public state: CaseState, public expected: CaseState = "AWAITING_USER") {
+    super(`Case is in state ${state}, not ${expected}.`);
   }
 }
 
@@ -840,8 +840,16 @@ export async function recordAnswers(caseId: string, answers: Record<string, stri
 export async function approveCase(caseId: string) {
   const c = await getCase(caseId);
   const sentOn = simNow(c.sim_offset_days);
-  await updateCase(caseId, { state: "APPROVED", complaint_sent_on: sentOn });
   const db = supabaseAdmin();
+  // Claim the transition atomically: of two concurrent approvals only one wins, so follow-ups are scheduled once.
+  const { data: claimed, error: claimError } = await db
+    .from("cases")
+    .update({ state: "APPROVED", complaint_sent_on: sentOn, updated_at: new Date().toISOString() })
+    .eq("id", caseId)
+    .eq("state", "AWAITING_APPROVAL")
+    .select("id");
+  if (claimError) throw claimError;
+  if (!claimed || claimed.length === 0) throw new InvalidStateError((await getCase(caseId)).state, "AWAITING_APPROVAL");
   const { data: latestDraft } = await db
     .from("drafts")
     .select("id")

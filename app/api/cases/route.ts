@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
 
-    if (error) return NextResponse.json({ error: { code: "db_error", message: error.message } }, { status: 500 });
+    if (error) throw error; // errorResponse() logs it and returns a generic 500
     return NextResponse.json({ id: data.id });
   } catch (err) {
     return errorResponse(err);

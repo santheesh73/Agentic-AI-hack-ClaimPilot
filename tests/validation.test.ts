@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ApiError,
   errorResponse,
@@ -19,7 +19,7 @@ function fakeRequest(body: unknown): Request {
 }
 
 function fakeInvalidJsonRequest(): Request {
-  return new Request("http://localhost/test", { method: "POST", body: "{not json" });
+  return new Request("http://localhost/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{not json" });
 }
 
 describe("errorResponse", () => {
@@ -30,19 +30,27 @@ describe("errorResponse", () => {
     expect(json).toEqual({ error: { code: "bad_input", message: "nope" } });
   });
 
-  it("maps an unknown error to a 500 internal_error", async () => {
-    const res = errorResponse(new Error("boom"));
+  it("maps an unknown error to a generic 500 that does not echo the internal message (audit F-031)", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = errorResponse(new Error("connect ECONNREFUSED 10.0.0.5:5432 password=hunter2"));
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json.error.code).toBe("internal_error");
-    expect(json.error.message).toBe("boom");
+    expect(JSON.stringify(json)).not.toMatch(/ECONNREFUSED|10\.0\.0\.5|hunter2/);
+    expect(json.error.request_id).toMatch(/^[0-9a-f-]{36}$/);
+    // the detail goes to the server log, tagged with the same id the client was given
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining(json.error.request_id), expect.any(Error));
+    spy.mockRestore();
   });
 
   it("maps a non-Error throw to a 500 with its string form", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = errorResponse("just a string");
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error.message).toBe("just a string");
+    expect(json.error.code).toBe("internal_error");
+    expect(json.error.message).not.toContain("just a string");
+    spy.mockRestore();
   });
 });
 
@@ -61,6 +69,26 @@ describe("parseJsonBody", () => {
       status: 400,
       code: "invalid_json",
     });
+  });
+
+  it("rejects a non-JSON content type with 415 (audit F-030)", async () => {
+    const req = new Request("http://localhost/test", { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ title: "x" }) });
+    await expect(parseJsonBody(req as never, CreateCaseBody)).rejects.toMatchObject({ status: 415, code: "unsupported_media_type" });
+  });
+
+  it("rejects a cross-origin request with 403 (audit F-030)", async () => {
+    const req = new Request("http://localhost/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "https://evil.example", Host: "claimpilot.example" },
+      body: JSON.stringify({ title: "x" }),
+    });
+    await expect(parseJsonBody(req as never, CreateCaseBody)).rejects.toMatchObject({ status: 403, code: "cross_origin" });
+  });
+
+  it("accepts a same-origin request and one with no Origin header", async () => {
+    const same = new Request("http://localhost/test", { method: "POST", headers: { "Content-Type": "application/json", Origin: "http://localhost", Host: "localhost" }, body: JSON.stringify({ title: "x" }) });
+    await expect(parseJsonBody(same as never, CreateCaseBody)).resolves.toMatchObject({ title: "x" });
+    await expect(parseJsonBody(fakeRequest({ title: "y" }) as never, CreateCaseBody)).resolves.toMatchObject({ title: "y" });
   });
 
   it("throws a 400 ApiError with the first Zod issue on schema failure", async () => {

@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOwnedCase } from "@/lib/ownership";
 import { runStep, StepLockedError } from "@/lib/agent/machine";
 import { supabaseAdmin } from "@/lib/db";
-import { notFoundResponse, errorResponse } from "@/lib/validation";
+import { notFoundResponse, errorResponse, assertSameOrigin } from "@/lib/validation";
 import { enforceRequestLimits } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    assertSameOrigin(req);
     const { id } = await params;
     const caseRow = await getOwnedCase(id);
     if (!caseRow) return notFoundResponse();

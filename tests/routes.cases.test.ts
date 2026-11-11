@@ -48,7 +48,7 @@ describe("POST /api/cases", () => {
 
   it("returns 400 on malformed JSON", async () => {
     const { POST } = await import("../app/api/cases/route");
-    const req = new Request("http://localhost/test", { method: "POST", body: "{not json" });
+    const req = new Request("http://localhost/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{not json" });
     const res = await POST(req as never);
     expect(res.status).toBe(400);
     const json = await res.json();
