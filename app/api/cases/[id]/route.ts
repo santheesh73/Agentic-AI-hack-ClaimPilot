@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, DOCUMENTS_BUCKET } from "@/lib/db";
 import { getOwnedCase } from "@/lib/ownership";
 import { deadlinesForUi } from "@/lib/agent/deadlines";
-import { errorResponse, notFoundResponse } from "@/lib/validation";
+import { assertSameOrigin, errorResponse, notFoundResponse } from "@/lib/validation";
 
 export const maxDuration = 60;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    return await getCase(params);
+  } catch (err) {
+    return errorResponse(err);
+  }
+}
+
+async function getCase(params: Promise<{ id: string }>) {
   const { id } = await params;
   const caseRow = await getOwnedCase(id);
   if (!caseRow) return notFoundResponse();
@@ -41,8 +49,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    assertSameOrigin(req);
     const { id } = await params;
     const caseRow = await getOwnedCase(id);
     if (!caseRow) return notFoundResponse();

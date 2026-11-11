@@ -17,6 +17,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await enforceRequestLimits(req, caseRow.owner_id, "answer");
 
     const { answers } = await parseJsonBody(req, AnswerBody);
+    const asked = new Set((caseRow.missing_facts ?? []).map((mf: { key: string }) => mf.key));
+    const unknown = Object.keys(answers).filter((k) => !asked.has(k));
+    if (unknown.length) {
+      throw new ApiError(400, "unknown_answer_key", `Not a question this case asked: ${unknown.slice(0, 3).join(", ")}.`);
+    }
     try {
       await recordAnswers(id, answers);
     } catch (err) {

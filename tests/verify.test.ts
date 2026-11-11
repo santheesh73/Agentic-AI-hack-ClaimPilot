@@ -236,3 +236,12 @@ describe("stripping keeps the right sentences and the structure (F-004)", () => 
     expect(out).toBe("# Appeal\n\nThe waiting period has expired. [cite:E1] Please settle the claim of Rs 1,00,000.");
   });
 });
+
+// Audit F-017: PDFs in Indic scripts extract with NUL characters, which Postgres text columns reject.
+describe("control characters", () => {
+  it("normalize strips NULs and other C0 controls but keeps tab and newline", async () => {
+    const { normalize, stripControlChars } = await import("../lib/ingest/normalize");
+    expect(stripControlChars("पूव\u0000-मौजूदा\u0007 ok\tx\ny")).toBe("पूव-मौजूदा ok\tx\ny");
+    expect(normalize("pre\u0000-existing  disease")).toBe("pre-existing disease");
+  });
+});

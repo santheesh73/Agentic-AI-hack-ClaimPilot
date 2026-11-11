@@ -85,8 +85,9 @@ export default function Home() {
           <p className="text-muted-foreground">
             Turn a rejected health insurance claim into a cited, verified appeal — with real deadlines.
           </p>
-          <div className="flex justify-center gap-6 text-sm text-muted-foreground pt-2">
-            <span>✓ Every claim cited</span>
+          <p className="text-sm text-muted-foreground">Drafts for your review, not legal advice. ClaimPilot does not file anything on your behalf.</p>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-muted-foreground pt-2">
+            <span>✓ Policy claims need a citation</span>
             <span>✓ Citations verified in code</span>
             <span>✓ Real escalation deadlines</span>
           </div>

@@ -97,6 +97,7 @@ export async function generate<T extends z.ZodTypeAny>(
             messages,
             temperature,
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+            maxRetries: 0, // retries are ours (below); the SDK's own would multiply them (6 calls per 429)
           })
         : await generateObject({
             model: resolveModel(model),
@@ -105,6 +106,7 @@ export async function generate<T extends z.ZodTypeAny>(
             prompt: promptText,
             temperature,
             abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+            maxRetries: 0, // retries are ours (below); the SDK's own would multiply them (6 calls per 429)
           });
 
       await logEvent({
@@ -126,7 +128,8 @@ export async function generate<T extends z.ZodTypeAny>(
       lastError = err;
       const status = extractHttpStatus(err);
       const isRetryableStatus = status === 429 || (status != null && status >= 500);
-      const isSchemaFailure = !isRetryableStatus && !schemaRetryUsed;
+      // Only a response that arrived but didn't parse (no HTTP error status) earns the one schema retry; a 401/400 is not retried.
+      const isSchemaFailure = status === undefined && !schemaRetryUsed;
 
       await logEvent({
         caseId,

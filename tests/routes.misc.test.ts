@@ -47,7 +47,7 @@ beforeEach(() => {
 describe("POST /api/cases/[id]/answer", () => {
   beforeEach(() => {
     fakeDb.cases = [
-      { id: "case-1", owner_id: "owner-1", state: "AWAITING_USER", answers: {} },
+      { id: "case-1", owner_id: "owner-1", state: "AWAITING_USER", answers: {}, missing_facts: [{ key: "diagnosis_date", question: "When was it diagnosed?" }] },
     ];
     fakeDb.agent_events = [];
   });
@@ -115,7 +115,7 @@ describe("POST /api/cases/[id]/approve", () => {
     fakeDb.agent_events = [];
 
     const { POST } = await import("../app/api/cases/[id]/approve/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/approve", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(200);
 
     const updated = fakeDb.cases.find((c) => c.id === "case-1")!;
@@ -127,7 +127,7 @@ describe("POST /api/cases/[id]/approve", () => {
   it("rejects approving a case not in AWAITING_APPROVAL", async () => {
     fakeDb.cases = [{ id: "case-1", owner_id: "owner-1", state: "DRAFT" }];
     const { POST } = await import("../app/api/cases/[id]/approve/route");
-    const res = await POST({} as never, { params: Promise.resolve({ id: "case-1" }) });
+    const res = await POST(new Request("http://localhost/approve", { method: "POST" }) as never, { params: Promise.resolve({ id: "case-1" }) });
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error.code).toBe("invalid_state");

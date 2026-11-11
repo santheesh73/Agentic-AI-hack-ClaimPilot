@@ -46,9 +46,14 @@ function addCalendarMonths(d: Date, months: number): Date {
   return new Date(Date.UTC(targetYear, targetMonth, clampedDay));
 }
 
-/** now = today + sim_offset_days, as an ISO date string. */
+/** The calendar date in India (IST, UTC+5:30) of an instant, as yyyy-mm-dd. */
+export function istDate(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+}
+
+/** now = today (IST calendar date) + sim_offset_days, as an ISO date string. Using IST avoids recording the previous day for approvals between 00:00 and 05:30 IST. */
 export function simNow(simOffsetDays: number, today: Date = new Date()): string {
-  return toISO(addDays(today, simOffsetDays));
+  return toISO(addDays(parseISO(istDate(today)), simOffsetDays));
 }
 
 /** Before a complaint is sent, the only route is the insurer's GRO. */
