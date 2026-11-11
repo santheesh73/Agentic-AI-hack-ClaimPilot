@@ -17,6 +17,7 @@ function toCiteLinks(bodyMd: string): string {
 function CiteChip({ id, onClick }: { id: string; onClick: (id: string) => void }) {
   return (
     <Badge
+      asChild
       variant="outline"
       className="mx-0.5 cursor-pointer align-middle text-[10px] hover:bg-accent"
       onClick={(e) => {
@@ -24,7 +25,10 @@ function CiteChip({ id, onClick }: { id: string; onClick: (id: string) => void }
         onClick(id);
       }}
     >
-      {id}
+      {/* a real button: focusable, activated with Enter/Space, announced as a control */}
+      <button type="button" aria-label={`Show evidence ${id}`}>
+        {id}
+      </button>
     </Badge>
   );
 }
