@@ -243,3 +243,42 @@ describe("exception gate before DONT_APPEAL", () => {
     expect(calls.exception_review ?? 0).toBe(0);
   });
 });
+
+describe("waiting-period arithmetic is reconciled in code", () => {
+  const rubricYesYesNo = RUBRIC_WEAK; // C2 "yes" even though the waiting period expired
+  const expired = { applies: true, months: 48, start_date: "2022-03-01", admission_date: "2026-09-15" };
+
+  it("a model that answers C2 'yes' despite an expired waiting period ends STRONG, with the correction logged", async () => {
+    seed(NO_EXCEPTION, QUOTE_NONE, LETTER_SILENT);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    baseScript({
+      assess_case: () => ({
+        checks: rubricYesYesNo,
+        ledger: [{ temp_id: "L1", claim: "pre-existing waiting period", page_id: "p-policy", quote: QUOTE_NONE }],
+        missing_facts: [],
+        waiting_period: expired,
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+    expect(events().some((s) => s.startsWith("Corrected by code: 2022-03-01 + 48 months = 2026-03-01"))).toBe(true);
+  });
+
+  it("with a waiting period still running the model's 'yes' stands and the case ends WEAK", async () => {
+    seed(NO_EXCEPTION, QUOTE_NONE, LETTER_SILENT);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    baseScript({
+      assess_case: () => ({
+        checks: rubricYesYesNo,
+        ledger: [{ temp_id: "L1", claim: "pre-existing waiting period", page_id: "p-policy", quote: QUOTE_NONE }],
+        missing_facts: [],
+        waiting_period: { ...expired, admission_date: "2025-06-01" },
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].verdict).toBe("WEAK");
+    expect(events().some((s) => s.startsWith("Corrected by code"))).toBe(false);
+  });
+});

@@ -1,3 +1,4 @@
+import { reconcileWaitingPeriod } from "./waitingPeriod";
 import "server-only";
 import { supabaseAdmin } from "../db";
 import { logEvent } from "../models";
@@ -462,10 +463,14 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     if (error) throw error;
   }
 
-  const rubric: Check[] = assessment.checks.map((check) => ({
+  const mapped: Check[] = assessment.checks.map((check) => ({
     ...check,
     evidence_refs: check.evidence_refs.map((ref) => tempToShort.get(ref) ?? ref),
   }));
+  // Date arithmetic is code's job: a model that computes an expired waiting
+  // period and still answers "conditions hold" is corrected here.
+  const { checks: rubric, corrected } = reconcileWaitingPeriod(mapped, assessment.waiting_period);
+  if (corrected) await logEvent({ caseId: c.id, step: "ASSESS", summary: corrected });
 
   const verifiedCount = evidenceRows.filter((e) => e.verified).length;
 

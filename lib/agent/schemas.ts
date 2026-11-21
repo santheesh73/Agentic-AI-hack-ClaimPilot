@@ -58,6 +58,19 @@ export const Assessment = z.object({
     })
   ),
   missing_facts: z.array(z.object({ key: z.string(), question: z.string() })),
+  /**
+   * The cited clause's waiting period, as raw numbers so code can do the date
+   * arithmetic instead of trusting the model's prose. null/absent when the cited
+   * clause is not a waiting period.
+   */
+  waiting_period: z
+    .object({
+      applies: z.boolean(),
+      months: z.number().nullable(),
+      start_date: z.string().nullable(),
+      admission_date: z.string().nullable(),
+    })
+    .nullish(),
 });
 export type Assessment = z.infer<typeof Assessment>;
 
