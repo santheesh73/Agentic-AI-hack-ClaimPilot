@@ -1,3 +1,4 @@
+import { reconcileWaitingPeriod, waitingPeriodExpired } from "./waitingPeriod";
 import "server-only";
 import { supabaseAdmin } from "../db";
 import { logEvent } from "../models";
@@ -18,12 +19,13 @@ import { exceptionReview } from "./tools/exceptionReview";
 import {
   EXCEPTION_ANSWER_KEY,
   EXCEPTION_OPTIONS,
+  allRelevantExceptionsRuledOut,
   clauseTextFor,
   findExceptionMarkers,
   firstUnresolvedException,
   isNotSure,
 } from "./exceptions";
-import type { Check, RejectionFacts, Verdict } from "./schemas";
+import type { Assessment, Check, RejectionFacts, Verdict } from "./schemas";
 
 export const STATES = [
   "INTAKE",
@@ -418,6 +420,40 @@ export function locateQuote(
   return best ?? { page_id: statedPageId, ...first };
 }
 
+/**
+ * The other direction of "ask, don't assume": the model sometimes answers C3
+ * "an overriding exception applies" (e.g. the accident carve-out of a 30-day
+ * waiting period) although the insurer's own letter says the exception's
+ * condition did NOT occur ("not caused by any accident"). Only when the
+ * waiting period is verifiably still running, the clause has an exception, and
+ * every relevant exception is ruled out by a verified quote from the letter or
+ * the user's answers, C3 is corrected to "no" (eval case T). Never fires when
+ * anything is left unestablished, so it cannot turn a winnable appeal into a
+ * don't-appeal on the model's say-so.
+ */
+async function demoteRuledOutException(
+  c: CaseRow,
+  rubric: Check[],
+  wp: Assessment["waiting_period"]
+): Promise<{ rubric: Check[]; note: string | null }> {
+  const c3 = rubric.find((r) => r.id === "C3_OVERRIDING_CLAUSE");
+  if (c3?.answer !== "yes" || decideVerdict(rubric) !== "STRONG" || waitingPeriodExpired(wp) !== false) {
+    return { rubric, note: null };
+  }
+  const clauseTexts = await exceptionClauseTexts(c.id, new Set(c3.evidence_refs));
+  if (!clauseTexts.size) return { rubric, note: null };
+  const letter = await loadRejectionText(c.id);
+  const review = await exceptionReview(c.id, [...clauseTexts], letter, answersWithQuestions(c), c.facts!);
+  if (!allRelevantExceptionsRuledOut(review.exceptions, [letter, ...Object.values(c.answers ?? {})])) {
+    return { rubric, note: null };
+  }
+  const note = "Corrected by code: the waiting period was still running and the insurer's letter or the user's answers explicitly rule out every exception that could override it, so no overriding clause applies.";
+  return {
+    rubric: rubric.map((r) => (r.id === "C3_OVERRIDING_CLAUSE" ? { ...r, answer: "no" as const, rationale: `${r.rationale} ${note}` } : r)),
+    note,
+  };
+}
+
 async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   const db = supabaseAdmin();
   const { data: pages } = await db
@@ -462,10 +498,16 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
     if (error) throw error;
   }
 
-  const rubric: Check[] = assessment.checks.map((check) => ({
+  const mapped: Check[] = assessment.checks.map((check) => ({
     ...check,
     evidence_refs: check.evidence_refs.map((ref) => tempToShort.get(ref) ?? ref),
   }));
+  // Date arithmetic is code's job: a model that computes an expired waiting
+  // period and still answers "conditions hold" is corrected here.
+  const { checks: reconciled, corrected } = reconcileWaitingPeriod(mapped, assessment.waiting_period);
+  if (corrected) await logEvent({ caseId: c.id, step: "ASSESS", summary: corrected });
+  const { rubric, note: demoted } = await demoteRuledOutException(c, reconciled, assessment.waiting_period);
+  if (demoted) await logEvent({ caseId: c.id, step: "ASSESS", summary: demoted });
 
   const verifiedCount = evidenceRows.filter((e) => e.verified).length;
 
@@ -548,25 +590,18 @@ export function answersWithQuestions(c: Pick<CaseRow, "answers" | "missing_facts
  * relevant exception is established by a verifiable quote from the letter or
  * the user's answers). See lib/agent/exceptions.ts.
  */
-async function findUnresolvedExceptionQuestion(c: CaseRow): Promise<string | null> {
+/** The whole clause text (with next-page continuation) behind the given evidence refs that contains an exception marker. */
+async function exceptionClauseTexts(caseId: string, refs: Set<string>): Promise<Set<string>> {
   const db = supabaseAdmin();
-  const rubric = c.rubric ?? [];
-  const answerOf = (id: Check["id"]) => rubric.find((r) => r.id === id);
-  // The checks that drove the WEAK verdict: C4 if an explicit exclusion applies, else the cited clause (C1-C3).
-  const drivers = answerOf("C4_EXPLICIT_EXCLUSION")?.answer === "yes"
-    ? [answerOf("C4_EXPLICIT_EXCLUSION")!]
-    : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).map(answerOf).filter((x): x is Check => !!x);
-  const refs = new Set(drivers.flatMap((d) => d.evidence_refs));
-
-  const { evidence } = await loadEvidenceAndPages(c.id);
+  const { evidence } = await loadEvidenceAndPages(caseId);
   const verified = evidence.filter((e) => e.verified);
   const behind = verified.filter((e) => refs.has(e.short_id));
   const evidenceBehind = behind.length ? behind : verified; // no refs recorded: be conservative, look at all
 
-  const pageIds = [...new Set(evidenceBehind.map((e) => e.page_id))];
-  if (!pageIds.length) return null;
-  const { data: pages } = await db.from("pages").select("id, document_id, page_no, text").in("id", pageIds);
   const clauseTexts = new Set<string>();
+  const pageIds = [...new Set(evidenceBehind.map((e) => e.page_id))];
+  if (!pageIds.length) return clauseTexts;
+  const { data: pages } = await db.from("pages").select("id, document_id, page_no, text").in("id", pageIds);
   for (const e of evidenceBehind) {
     const page = (pages ?? []).find((p) => p.id === e.page_id);
     if (!page) continue;
@@ -579,6 +614,19 @@ async function findUnresolvedExceptionQuestion(c: CaseRow): Promise<string | nul
     const text = clauseTextFor(page.text as string, e.quote, (next?.text as string | undefined) ?? undefined);
     if (findExceptionMarkers(text).length) clauseTexts.add(text);
   }
+  return clauseTexts;
+}
+
+async function findUnresolvedExceptionQuestion(c: CaseRow): Promise<string | null> {
+  const rubric = c.rubric ?? [];
+  const answerOf = (id: Check["id"]) => rubric.find((r) => r.id === id);
+  // The checks that drove the WEAK verdict: C4 if an explicit exclusion applies, else the cited clause (C1-C3).
+  const drivers = answerOf("C4_EXPLICIT_EXCLUSION")?.answer === "yes"
+    ? [answerOf("C4_EXPLICIT_EXCLUSION")!]
+    : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).map(answerOf).filter((x): x is Check => !!x);
+  const refs = new Set(drivers.flatMap((d) => d.evidence_refs));
+
+  const clauseTexts = await exceptionClauseTexts(c.id, refs);
   if (!clauseTexts.size) return null; // no exception clause: straight to the verdict, no extra question
 
   const letter = await loadRejectionText(c.id);

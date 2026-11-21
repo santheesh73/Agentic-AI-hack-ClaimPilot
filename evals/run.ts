@@ -32,25 +32,30 @@ async function createCaseHeadless(evalCase: EvalCase) {
   const policyBuffer = fs.readFileSync(policyPath);
   const policyPages = await parsePdf(policyBuffer);
 
-  const { data: policyDoc } = await db
+  const { data: policyDoc, error: policyDocError } = await db
     .from("documents")
     .insert({ case_id: caseId, kind: "policy", filename: path.basename(policyPath), page_count: policyPages.length })
     .select("id")
     .single();
-  await db.from("pages").insert(
+  if (policyDocError) throw policyDocError;
+  // Seeding errors must surface: a silently missing page set looks like "no extractable text".
+  const { error: policyPagesError } = await db.from("pages").insert(
     policyPages.map((p) => ({ document_id: policyDoc!.id, case_id: caseId, page_no: p.page_no, text: p.text, text_norm: p.text_norm }))
   );
+  if (policyPagesError) throw new Error(`seeding policy pages failed: ${policyPagesError.message}`);
 
   const letterPath = path.resolve(__dirname, "..", evalCase.letter);
   const letterText = fs.readFileSync(letterPath, "utf-8");
-  const { data: rejectionDoc } = await db
+  const { data: rejectionDoc, error: rejectionDocError } = await db
     .from("documents")
     .insert({ case_id: caseId, kind: "rejection", filename: path.basename(letterPath), page_count: 1 })
     .select("id")
     .single();
-  await db.from("pages").insert([
+  if (rejectionDocError) throw rejectionDocError;
+  const { error: letterPagesError } = await db.from("pages").insert([
     { document_id: rejectionDoc!.id, case_id: caseId, page_no: 1, text: letterText, text_norm: normalize(letterText) },
   ]);
+  if (letterPagesError) throw new Error(`seeding letter page failed: ${letterPagesError.message}`);
 
   return caseId;
 }

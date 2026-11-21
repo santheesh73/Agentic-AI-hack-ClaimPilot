@@ -124,3 +124,21 @@ export function firstUnresolvedException(
   }
   return null;
 }
+
+/**
+ * True when the review found at least one relevant exception and EVERY relevant
+ * exception is explicitly ruled out (status does_not_apply) by a quote that is
+ * verifiably present in the rejection letter or the user's answers. The mirror
+ * of firstUnresolvedException: that one guards against assuming an exception
+ * doesn't apply; this one guards against assuming it does when the insurer's
+ * own letter says otherwise (eval case T).
+ */
+export function allRelevantExceptionsRuledOut(exceptions: ExceptionReviewItem[], sources: string[]): boolean {
+  const relevant = exceptions.filter((e) => e.relevant);
+  if (!relevant.length) return false;
+  const normalizedSources = sources.map((s) => normalize(s));
+  return relevant.every((e) => {
+    const quote = e.basis_quote?.trim();
+    return e.status === "does_not_apply" && !!quote && normalizedSources.some((s) => matchQuote(quote, s).ok);
+  });
+}

@@ -1,0 +1,19 @@
+{
+  "ranAt": "2026-11-21T14:56:00.092Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 43814,
+      "tokens": 9251
+    }
+  ]
+}
