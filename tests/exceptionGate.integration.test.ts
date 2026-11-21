@@ -282,3 +282,73 @@ describe("waiting-period arithmetic is reconciled in code", () => {
     expect(events().some((s) => s.startsWith("Corrected by code"))).toBe(false);
   });
 });
+
+describe("an exception the letter explicitly rules out is not allowed to override the exclusion (case T)", () => {
+  const running = { applies: true, months: 1, start_date: "2026-10-05", admission_date: "2026-10-22" };
+  const expired = { applies: true, months: 1, start_date: "2026-08-01", admission_date: "2026-10-22" };
+  const ruledOut = () => ({
+    exceptions: [{ condition: "the hip replacement was needed because of an accident", relevant: true, status: "does_not_apply", basis_quote: "was not caused by any accident" }],
+    question: null,
+  });
+  const LETTER_T = LETTER_SILENT + " Our medical review found the fracture resulted from osteoporosis and was not caused by any accident.";
+
+  function run(wp: unknown, review: () => unknown) {
+    seed(WITH_EXCEPTION, QUOTE_EXC, LETTER_T);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    baseScript({
+      // the model wrongly lets the accident exception override the exclusion
+      assess_case: () => ({
+        checks: RUBRIC_STRONG,
+        ledger: [{ temp_id: "L1", claim: "waiting period", page_id: "p-policy", quote: QUOTE_EXC }],
+        missing_facts: [],
+        waiting_period: wp,
+      }),
+      exception_review: review,
+    });
+  }
+
+  it("corrects C3 to 'no' and ends WEAK / DONT_APPEAL when the waiting period is running and the letter rules the exception out", async () => {
+    run(running, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].verdict).toBe("WEAK");
+    expect(events().some((s) => s.startsWith("Corrected by code: the waiting period was still running"))).toBe(true);
+  });
+
+  it("leaves STRONG alone when the exception is not established", async () => {
+    run(running, () => review());
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+    expect(events().some((s) => s.startsWith("Corrected by code"))).toBe(false);
+  });
+
+  it("leaves STRONG alone when the exception applies", async () => {
+    run(running, () => ({
+      exceptions: [{ condition: "accident", relevant: true, status: "applies", basis_quote: "followed an accident" }],
+      question: null,
+    }));
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+  });
+
+  it("does not even ask the model when the waiting period has expired or its dates are unknown", async () => {
+    run(expired, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(calls.exception_review ?? 0).toBe(0);
+    for (const k of Object.keys(calls)) delete calls[k];
+    run(null, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(calls.exception_review ?? 0).toBe(0);
+  });
+
+  it("does not run for a clause without an exception marker", async () => {
+    seed(NO_EXCEPTION, QUOTE_NONE, LETTER_T);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    baseScript({
+      assess_case: () => ({ checks: RUBRIC_STRONG, ledger: [{ temp_id: "L1", claim: "c", page_id: "p-policy", quote: QUOTE_NONE }], missing_facts: [], waiting_period: running }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(calls.exception_review ?? 0).toBe(0);
+  });
+});

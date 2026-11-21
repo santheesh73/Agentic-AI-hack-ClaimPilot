@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   EXCEPTION_MARKERS,
+  allRelevantExceptionsRuledOut,
   clauseTextFor,
   findExceptionMarkers,
   firstUnresolvedException,
@@ -173,4 +174,37 @@ describe("firstUnresolvedException", () => {
 describe("isNotSure", () => {
   it.each(["Not sure", "not sure", " Not sure. ", "NOT SURE"])("%j is not sure", (a) => expect(isNotSure(a)).toBe(true));
   it.each(["Yes", "No", "I am not sure whether it was an accident", "", undefined])("%j is not 'Not sure'", (a) => expect(isNotSure(a)).toBe(false));
+});
+
+describe("allRelevantExceptionsRuledOut", () => {
+  const letter = "Our medical review found the fracture resulted from osteoporosis and was not caused by any accident.";
+  const ex = (over: Record<string, unknown> = {}) => ({
+    condition: "the fracture was caused by an accident", relevant: true, status: "does_not_apply" as const,
+    basis_quote: "was not caused by any accident", ...over,
+  });
+
+  it("is true when every relevant exception is ruled out by a quote found in the letter", () => {
+    expect(allRelevantExceptionsRuledOut([ex()], [letter])).toBe(true);
+  });
+  it("is true when the ruling-out quote comes from the user's answers", () => {
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "No, it was not an accident" })], [letter, "Was it an accident? — No, it was not an accident"])).toBe(true);
+  });
+  it("is false with no relevant exception at all", () => {
+    expect(allRelevantExceptionsRuledOut([], [letter])).toBe(false);
+    expect(allRelevantExceptionsRuledOut([ex({ relevant: false })], [letter])).toBe(false);
+  });
+  it("is false when any relevant exception applies or is not established", () => {
+    expect(allRelevantExceptionsRuledOut([ex(), ex({ status: "applies" })], [letter])).toBe(false);
+    expect(allRelevantExceptionsRuledOut([ex(), ex({ status: "not_established", basis_quote: null })], [letter])).toBe(false);
+  });
+  it("is false when the basis quote is missing or not actually in the sources (a model's say-so is not enough)", () => {
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: null })], [letter])).toBe(false);
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "the patient confirmed no accident occurred" })], [letter])).toBe(false);
+  });
+  it("ignores irrelevant exceptions when the relevant ones are ruled out", () => {
+    expect(allRelevantExceptionsRuledOut([ex(), ex({ relevant: false, status: "not_established", basis_quote: null })], [letter])).toBe(true);
+  });
+  it("does not accept a quote with flipped polarity", () => {
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "was caused by an accident" })], [letter])).toBe(false);
+  });
 });
