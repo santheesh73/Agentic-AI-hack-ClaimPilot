@@ -428,7 +428,7 @@ export function locateQuote(
  * Only when the waiting period is verifiably still running, no other exclusion
  * applies, the cited clause has an exception, and EVERY relevant exception is
  * ruled out by a verified quote from the letter or the user's answers, code
- * sets C3 to "no" and C5 to "yes" and drops the redundant question (eval case
+ * sets C2 to "yes", C3 to "no" and C5 to "yes" and drops the redundant question (eval case
  * T). Never fires when anything is unestablished, when the period expired, or
  * when its dates are unknown, so it cannot turn a winnable appeal into a
  * don't-appeal on the model's say-so.
@@ -442,7 +442,8 @@ async function resolveRuledOutExceptions(
   const c3 = get("C3_OVERRIDING_CLAUSE");
   const c5 = get("C5_FACTS_KNOWN");
   if (get("C4_EXPLICIT_EXCLUSION")?.answer === "yes" || waitingPeriodExpired(wp) !== false) return { rubric, note: null };
-  if (c3?.answer === "no" && c5?.answer === "yes") return { rubric, note: null }; // nothing to correct
+  const c2 = get("C2_CONDITIONS_HOLD");
+  if (c2?.answer === "yes" && c3?.answer === "no" && c5?.answer === "yes") return { rubric, note: null }; // nothing to correct
   // A C3 "yes" is judged on the clause it cites; otherwise on the cited clause (C1-C3).
   const refs = new Set(
     (c3?.answer === "yes" ? c3.evidence_refs : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).flatMap((id) => get(id)?.evidence_refs ?? []))
@@ -457,6 +458,9 @@ async function resolveRuledOutExceptions(
   const note = "Corrected by code: the waiting period was still running and the insurer's letter or the user's answers explicitly rule out every exception that could override it, so no overriding clause applies and nothing is left to ask.";
   return {
     rubric: rubric.map((r) => {
+      // The period is code-verified as still running, so the clause's own condition holds (C2): a model that
+      // answered "no" because it weighed the exception into C2 is corrected too.
+      if (r.id === "C2_CONDITIONS_HOLD" && r.answer !== "yes") return { ...r, answer: "yes" as const, rationale: `${r.rationale} ${note}` };
       if (r.id === "C3_OVERRIDING_CLAUSE" && r.answer !== "no") return { ...r, answer: "no" as const, rationale: `${r.rationale} ${note}` };
       if (r.id === "C5_FACTS_KNOWN" && r.answer !== "yes") return { ...r, answer: "yes" as const, rationale: `${r.rationale} ${note}` };
       return r;

@@ -375,6 +375,17 @@ describe("an exception the letter explicitly rules out is not allowed to overrid
     expect(fakeDb.cases[0].missing_facts).toEqual([]);
   });
 
+  it("also corrects C2 'no' (the model weighed the exception into C2), as seen live on case T", async () => {
+    const checks = RUBRIC_WEAK.map((c) =>
+      c.id === "C2_CONDITIONS_HOLD" ? { ...c, answer: "no" } : c.id === "C3_OVERRIDING_CLAUSE" ? { ...c, answer: "no" } : c
+    );
+    runAsking(checks, running, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].verdict).toBe("WEAK");
+    const rubric = fakeDb.cases[0].rubric as Array<{ id: string; answer: string }>;
+    expect(rubric.find((r) => r.id === "C2_CONDITIONS_HOLD")?.answer).toBe("yes");
+  });
+
   it("still asks when the exception is not established", async () => {
     runAsking(rubricWith("no", "no"), running, () => review());
     expect(await runToPause("ASSESS")).toBe("AWAITING_USER");
