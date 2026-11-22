@@ -70,6 +70,7 @@ A health insurance claim was rejected under a policy clause that may contain exc
 
 For every exception in the clause:
 - condition: the circumstance in which the exclusion does NOT apply, in plain language.
+- One exception is one item, even when it has several conditions ("except claims arising due to an accident, provided the same are covered elsewhere in the policy" is ONE exception). If any necessary condition is ruled out (here: it was not an accident), the whole exception does_not_apply; never list its remaining conditions as separate exceptions or ask about them.
 - relevant: true only if the exception concerns the treatment or situation of this claim. An exception that concerns a different item in the same clause (a different procedure or condition) is not relevant.
 - status: "applies" or "does_not_apply" ONLY if the letter or the user's answers explicitly say so. Silence is not evidence: if they do not mention the circumstance, the status is "not_established". Never infer "does not apply" from the absence of a mention.
 - A statement in the letter or the answers that denies or contradicts the circumstance IS explicit, even if worded differently: "was not caused by any accident" rules out an accident exception; "you have no prior health insurance policy with any insurer" rules out a continuity-of-cover or portability exception. Mark those "does_not_apply" and quote the denying words.
