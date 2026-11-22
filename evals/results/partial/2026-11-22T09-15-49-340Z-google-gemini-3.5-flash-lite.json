@@ -1,0 +1,20 @@
+{
+  "ranAt": "2026-11-22T09:15:49.340Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "heldout_r_30day_illness_continuity_exception",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "askedException": false,
+      "infraError": "quota",
+      "verifiedPct": 0,
+      "steps": 2,
+      "ms": 10052,
+      "tokens": 0
+    }
+  ]
+}
