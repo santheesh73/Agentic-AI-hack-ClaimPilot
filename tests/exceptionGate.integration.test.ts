@@ -341,6 +341,96 @@ describe("an exception the letter explicitly rules out is not allowed to overrid
     expect(calls.exception_review ?? 0).toBe(0);
   });
 
+  const ASK_ACCIDENT = [{ key: "accident_involvement", question: "Was the fracture caused by an accident?" }];
+  const rubricWith = (c3: string, c5: string) =>
+    RUBRIC_WEAK.map((c) => (c.id === "C3_OVERRIDING_CLAUSE" ? { ...c, answer: c3 } : c.id === "C5_FACTS_KNOWN" ? { ...c, answer: c5 } : c));
+
+  function runAsking(checks: unknown[], wp: unknown, rev: () => unknown) {
+    seed(WITH_EXCEPTION, QUOTE_EXC, LETTER_T);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    baseScript({
+      assess_case: () => ({
+        checks,
+        ledger: [{ temp_id: "L1", claim: "waiting period", page_id: "p-policy", quote: QUOTE_EXC }],
+        missing_facts: ASK_ACCIDENT,
+        waiting_period: wp,
+      }),
+      exception_review: rev,
+    });
+  }
+
+  it("drops the redundant 'was it an accident?' question when the letter already rules it out (C3 unknown, C5 unknown)", async () => {
+    runAsking(rubricWith("unknown", "unknown"), running, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].verdict).toBe("WEAK");
+    expect(fakeDb.cases[0].missing_facts).toEqual([]);
+    const rubric = fakeDb.cases[0].rubric as Array<{ id: string; answer: string }>;
+    expect(rubric.find((r) => r.id === "C5_FACTS_KNOWN")?.answer).toBe("yes");
+  });
+
+  it("drops the redundant question when the model already said C3 no but C5 no", async () => {
+    runAsking(rubricWith("no", "no"), running, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].missing_facts).toEqual([]);
+  });
+
+  it("also corrects C2 'no' (the model weighed the exception into C2), as seen live on case T", async () => {
+    const checks = RUBRIC_WEAK.map((c) =>
+      c.id === "C2_CONDITIONS_HOLD" ? { ...c, answer: "no" } : c.id === "C3_OVERRIDING_CLAUSE" ? { ...c, answer: "no" } : c
+    );
+    runAsking(checks, running, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("DONT_APPEAL");
+    expect(fakeDb.cases[0].verdict).toBe("WEAK");
+    const rubric = fakeDb.cases[0].rubric as Array<{ id: string; answer: string }>;
+    expect(rubric.find((r) => r.id === "C2_CONDITIONS_HOLD")?.answer).toBe("yes");
+  });
+
+  it("does NOT correct when the 'ruled out' quote is a date restatement the user's answers contradict (case R: a correct STRONG stays STRONG)", async () => {
+    seed(WITH_EXCEPTION, QUOTE_EXC, "Your policy with us commenced on 02 October 2026. The admission took place 16 days after commencement.");
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    fakeDb.cases[0].answers = { prior_cover: "I was continuously insured under my employer's group policy with no break in cover." };
+    baseScript({
+      assess_case: () => ({ checks: RUBRIC_STRONG, ledger: [{ temp_id: "L1", claim: "waiting period", page_id: "p-policy", quote: QUOTE_EXC }], missing_facts: [], waiting_period: running }),
+      exception_review: () => ({
+        exceptions: [{ condition: "continuity of cover", relevant: true, status: "does_not_apply", basis_quote: "Your policy with us commenced on 02 October 2026" }],
+        question: null,
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+    expect(events().some((s) => s.startsWith("Corrected by code: the waiting period"))).toBe(false);
+  });
+
+  it("does NOT correct when the only denying quote comes from the user's answers rather than the letter", async () => {
+    seed(WITH_EXCEPTION, QUOTE_EXC, LETTER_SILENT);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    fakeDb.cases[0].answers = { accident: "No, it was not an accident" };
+    baseScript({
+      assess_case: () => ({ checks: RUBRIC_STRONG, ledger: [{ temp_id: "L1", claim: "w", page_id: "p-policy", quote: QUOTE_EXC }], missing_facts: [], waiting_period: running }),
+      exception_review: () => ({
+        exceptions: [{ condition: "accident", relevant: true, status: "does_not_apply", basis_quote: "No, it was not an accident" }],
+        question: null,
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+  });
+
+  it("still asks when the exception is not established", async () => {
+    runAsking(rubricWith("no", "no"), running, () => review());
+    expect(await runToPause("ASSESS")).toBe("AWAITING_USER");
+    expect(fakeDb.cases[0].missing_facts).toEqual(ASK_ACCIDENT);
+  });
+
+  it("still asks when the waiting period dates are unknown", async () => {
+    runAsking(rubricWith("no", "no"), null, ruledOut);
+    expect(await runToPause("ASSESS")).toBe("AWAITING_USER");
+    expect(calls.exception_review ?? 0).toBe(0);
+  });
+
   it("does not run for a clause without an exception marker", async () => {
     seed(NO_EXCEPTION, QUOTE_NONE, LETTER_T);
     fakeDb.cases[0].state = "ASSESS";

@@ -1,0 +1,19 @@
+{
+  "ranAt": "2026-11-22T08:25:20.814Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "heldout_t_exception_explicitly_ruled_out",
+      "expected": "WEAK",
+      "got": "AWAITING_USER",
+      "finalState": "AWAITING_USER",
+      "askedException": true,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 20830,
+      "tokens": 6194
+    }
+  ]
+}

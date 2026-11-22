@@ -125,10 +125,17 @@ export function firstUnresolvedException(
   return null;
 }
 
+/** An explicit denial: a quote that merely restates dates or facts ("Your policy commenced on ...") denies nothing. */
+const NEGATION_RE = /\b(?:no|not|never|none|neither|nor|without|cannot|can't|isn't|wasn't|didn't|hasn't|haven't)\b/i;
+
 /**
  * True when the review found at least one relevant exception and EVERY relevant
  * exception is explicitly ruled out (status does_not_apply) by a quote that is
- * verifiably present in the rejection letter or the user's answers. The mirror
+ * verifiably present in `sources` AND explicitly denies something (contains a
+ * negation). Callers pass only the insurer's letter: the quote must be the
+ * insurer's own statement, so a model that misreads the user's answers (or a
+ * date restatement) as "ruled out" cannot flip a winnable appeal (eval case R).
+ * The mirror
  * of firstUnresolvedException: that one guards against assuming an exception
  * doesn't apply; this one guards against assuming it does when the insurer's
  * own letter says otherwise (eval case T).
@@ -139,6 +146,6 @@ export function allRelevantExceptionsRuledOut(exceptions: ExceptionReviewItem[],
   const normalizedSources = sources.map((s) => normalize(s));
   return relevant.every((e) => {
     const quote = e.basis_quote?.trim();
-    return e.status === "does_not_apply" && !!quote && normalizedSources.some((s) => matchQuote(quote, s).ok);
+    return e.status === "does_not_apply" && !!quote && NEGATION_RE.test(quote) && normalizedSources.some((s) => matchQuote(quote, s).ok);
   });
 }

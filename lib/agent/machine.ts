@@ -421,35 +421,51 @@ export function locateQuote(
 }
 
 /**
- * The other direction of "ask, don't assume": the model sometimes answers C3
- * "an overriding exception applies" (e.g. the accident carve-out of a 30-day
- * waiting period) although the insurer's own letter says the exception's
- * condition did NOT occur ("not caused by any accident"). Only when the
- * waiting period is verifiably still running, the clause has an exception, and
- * every relevant exception is ruled out by a verified quote from the letter or
- * the user's answers, C3 is corrected to "no" (eval case T). Never fires when
- * anything is left unestablished, so it cannot turn a winnable appeal into a
+ * The other direction of "ask, don't assume": the model sometimes lets an
+ * exception override the exclusion (C3 "yes"), or lists "was it an accident?"
+ * as a missing fact (C3/C5 "unknown"), although the insurer's own letter says
+ * the exception's condition did NOT occur ("not caused by any accident").
+ * Only when the waiting period is verifiably still running, no other exclusion
+ * applies, the cited clause has an exception, and EVERY relevant exception is
+ * ruled out by a verified, explicitly negating quote from the INSURER'S LETTER, code
+ * sets C2 to "yes", C3 to "no" and C5 to "yes" and drops the redundant question (eval case
+ * T). Never fires when anything is unestablished, when the period expired, or
+ * when its dates are unknown, so it cannot turn a winnable appeal into a
  * don't-appeal on the model's say-so.
  */
-async function demoteRuledOutException(
+async function resolveRuledOutExceptions(
   c: CaseRow,
   rubric: Check[],
   wp: Assessment["waiting_period"]
 ): Promise<{ rubric: Check[]; note: string | null }> {
-  const c3 = rubric.find((r) => r.id === "C3_OVERRIDING_CLAUSE");
-  if (c3?.answer !== "yes" || decideVerdict(rubric) !== "STRONG" || waitingPeriodExpired(wp) !== false) {
-    return { rubric, note: null };
-  }
-  const clauseTexts = await exceptionClauseTexts(c.id, new Set(c3.evidence_refs));
+  const get = (id: Check["id"]) => rubric.find((r) => r.id === id);
+  const c3 = get("C3_OVERRIDING_CLAUSE");
+  const c5 = get("C5_FACTS_KNOWN");
+  if (get("C4_EXPLICIT_EXCLUSION")?.answer === "yes" || waitingPeriodExpired(wp) !== false) return { rubric, note: null };
+  const c2 = get("C2_CONDITIONS_HOLD");
+  if (c2?.answer === "yes" && c3?.answer === "no" && c5?.answer === "yes") return { rubric, note: null }; // nothing to correct
+  // A C3 "yes" is judged on the clause it cites; otherwise on the cited clause (C1-C3).
+  const refs = new Set(
+    (c3?.answer === "yes" ? c3.evidence_refs : (["C1_CLAUSE_EXISTS", "C2_CONDITIONS_HOLD", "C3_OVERRIDING_CLAUSE"] as const).flatMap((id) => get(id)?.evidence_refs ?? []))
+  );
+  const clauseTexts = await exceptionClauseTexts(c.id, refs);
   if (!clauseTexts.size) return { rubric, note: null };
   const letter = await loadRejectionText(c.id);
   const review = await exceptionReview(c.id, [...clauseTexts], letter, answersWithQuestions(c), c.facts!);
-  if (!allRelevantExceptionsRuledOut(review.exceptions, [letter, ...Object.values(c.answers ?? {})])) {
+  // Letter only: the insurer's own explicit statement. Never the user's answers (they may establish the exception; eval case R).
+  if (!allRelevantExceptionsRuledOut(review.exceptions, [letter])) {
     return { rubric, note: null };
   }
-  const note = "Corrected by code: the waiting period was still running and the insurer's letter or the user's answers explicitly rule out every exception that could override it, so no overriding clause applies.";
+  const note = "Corrected by code: the waiting period was still running and the insurer's letter explicitly rules out every exception that could override it, so no overriding clause applies and nothing is left to ask.";
   return {
-    rubric: rubric.map((r) => (r.id === "C3_OVERRIDING_CLAUSE" ? { ...r, answer: "no" as const, rationale: `${r.rationale} ${note}` } : r)),
+    rubric: rubric.map((r) => {
+      // The period is code-verified as still running, so the clause's own condition holds (C2): a model that
+      // answered "no" because it weighed the exception into C2 is corrected too.
+      if (r.id === "C2_CONDITIONS_HOLD" && r.answer !== "yes") return { ...r, answer: "yes" as const, rationale: `${r.rationale} ${note}` };
+      if (r.id === "C3_OVERRIDING_CLAUSE" && r.answer !== "no") return { ...r, answer: "no" as const, rationale: `${r.rationale} ${note}` };
+      if (r.id === "C5_FACTS_KNOWN" && r.answer !== "yes") return { ...r, answer: "yes" as const, rationale: `${r.rationale} ${note}` };
+      return r;
+    }),
     note,
   };
 }
@@ -506,14 +522,14 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   // period and still answers "conditions hold" is corrected here.
   const { checks: reconciled, corrected } = reconcileWaitingPeriod(mapped, assessment.waiting_period);
   if (corrected) await logEvent({ caseId: c.id, step: "ASSESS", summary: corrected });
-  const { rubric, note: demoted } = await demoteRuledOutException(c, reconciled, assessment.waiting_period);
+  const { rubric, note: demoted } = await resolveRuledOutExceptions(c, reconciled, assessment.waiting_period);
   if (demoted) await logEvent({ caseId: c.id, step: "ASSESS", summary: demoted });
 
   const verifiedCount = evidenceRows.filter((e) => e.verified).length;
 
   const c5 = rubric.find((r) => r.id === "C5_FACTS_KNOWN");
   const answers = c.answers ?? {};
-  const unresolvedMissing = (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
+  const unresolvedMissing = demoted ? [] : (assessment.missing_facts ?? []).filter((mf) => !(mf.key in answers));
   // The question is only worth the user's time if the answer could change
   // the outcome: decide the provisional verdict first (audit F-005).
   const needsUser = needsUserInput(decideVerdict(rubric), c5?.answer, unresolvedMissing.length > 0);
@@ -523,7 +539,7 @@ async function runAssess(c: CaseRow): Promise<{ state: CaseState }> {
   await updateCase(c.id, {
     state: nextState,
     rubric,
-    missing_facts: assessment.missing_facts,
+    missing_facts: demoted ? [] : assessment.missing_facts,
   });
 
   const yes = rubric.filter((r) => r.answer === "yes").length;
