@@ -1,0 +1,229 @@
+{
+  "ranAt": "2026-11-22T08:56:20.587Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "case_a_ped_waiting_period_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 51499,
+      "tokens": 9326
+    },
+    {
+      "case": "case_b_non_disclosure_missing_diagnosis_date",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 39106,
+      "tokens": 8544
+    },
+    {
+      "case": "case_c_cosmetic_surgery_explicit_exclusion",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 29456,
+      "tokens": 8140
+    },
+    {
+      "case": "case_d_30day_wait_but_accident",
+      "expected": "STRONG",
+      "got": "ERROR",
+      "finalState": "ERROR",
+      "askedException": false,
+      "infraError": "provider_unavailable",
+      "verifiedPct": 0,
+      "steps": 4,
+      "ms": 29189,
+      "tokens": 1003
+    },
+    {
+      "case": "case_e_30day_wait_illness_genuine",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 23478,
+      "tokens": 6347
+    },
+    {
+      "case": "case_f_hernia_within_24_months",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 33075,
+      "tokens": 6103
+    },
+    {
+      "case": "case_g_cataract_waiting_completed",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 12,
+      "ms": 67032,
+      "tokens": 13223
+    },
+    {
+      "case": "case_h_ped_portability_credit",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 64648,
+      "tokens": 13943
+    },
+    {
+      "case": "case_i_ped_waiting_not_completed",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 17173,
+      "tokens": 5373
+    },
+    {
+      "case": "case_j_adventure_sport_amateur",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 51276,
+      "tokens": 6228
+    },
+    {
+      "case": "case_k_reconstruction_after_burns",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 41167,
+      "tokens": 6511
+    },
+    {
+      "case": "case_l_non_disclosure_known_condition",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 28063,
+      "tokens": 4588
+    },
+    {
+      "case": "heldout_m_ped_ported_from_group_cover",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 59588,
+      "tokens": 15637
+    },
+    {
+      "case": "heldout_n_condition_first_diagnosed_after_start",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 50448,
+      "tokens": 8008
+    },
+    {
+      "case": "heldout_o_joint_replacement_after_accident",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": true,
+      "verifiedPct": 100,
+      "steps": 11,
+      "ms": 64956,
+      "tokens": 14558
+    },
+    {
+      "case": "heldout_p_portability_with_break_in_cover",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 6,
+      "ms": 34213,
+      "tokens": 10367
+    },
+    {
+      "case": "heldout_q_30day_wait_cause_not_stated",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 9,
+      "ms": 48815,
+      "tokens": 10199
+    },
+    {
+      "case": "heldout_r_30day_illness_continuity_exception",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 60279,
+      "tokens": 16160
+    },
+    {
+      "case": "heldout_s_reconstruction_after_cancer_cause_not_stated",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 12,
+      "ms": 75102,
+      "tokens": 10276
+    },
+    {
+      "case": "heldout_t_exception_explicitly_ruled_out",
+      "expected": "WEAK",
+      "got": "WEAK",
+      "finalState": "DONT_APPEAL",
+      "askedException": false,
+      "verifiedPct": 0,
+      "steps": 5,
+      "ms": 29807,
+      "tokens": 6202
+    }
+  ]
+}
