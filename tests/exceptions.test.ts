@@ -186,8 +186,16 @@ describe("allRelevantExceptionsRuledOut", () => {
   it("is true when every relevant exception is ruled out by a quote found in the letter", () => {
     expect(allRelevantExceptionsRuledOut([ex()], [letter])).toBe(true);
   });
-  it("is true when the ruling-out quote comes from the user's answers", () => {
-    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "No, it was not an accident" })], [letter, "Was it an accident? — No, it was not an accident"])).toBe(true);
+  it("accepts a quote only from the sources it is given (callers pass the letter alone)", () => {
+    const answers = "Was it an accident? — No, it was not an accident";
+    const quote = ex({ basis_quote: "No, it was not an accident" });
+    expect(allRelevantExceptionsRuledOut([quote], [letter, answers])).toBe(true);
+    expect(allRelevantExceptionsRuledOut([quote], [letter])).toBe(false);
+  });
+  it("rejects a quote that denies nothing, such as a restatement of dates (eval case R)", () => {
+    const l = "Your policy with us commenced on 02 October 2026. The admission took place 16 days after commencement.";
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "Your policy with us commenced on 02 October 2026" })], [l])).toBe(false);
+    expect(allRelevantExceptionsRuledOut([ex({ basis_quote: "you have no prior health insurance policy with any insurer" })], ["Your first policy commenced on 05 October 2026, and you have no prior health insurance policy with any insurer."])).toBe(true);
   });
   it("is false with no relevant exception at all", () => {
     expect(allRelevantExceptionsRuledOut([], [letter])).toBe(false);

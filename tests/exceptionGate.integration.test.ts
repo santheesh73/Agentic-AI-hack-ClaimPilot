@@ -386,6 +386,39 @@ describe("an exception the letter explicitly rules out is not allowed to overrid
     expect(rubric.find((r) => r.id === "C2_CONDITIONS_HOLD")?.answer).toBe("yes");
   });
 
+  it("does NOT correct when the 'ruled out' quote is a date restatement the user's answers contradict (case R: a correct STRONG stays STRONG)", async () => {
+    seed(WITH_EXCEPTION, QUOTE_EXC, "Your policy with us commenced on 02 October 2026. The admission took place 16 days after commencement.");
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    fakeDb.cases[0].answers = { prior_cover: "I was continuously insured under my employer's group policy with no break in cover." };
+    baseScript({
+      assess_case: () => ({ checks: RUBRIC_STRONG, ledger: [{ temp_id: "L1", claim: "waiting period", page_id: "p-policy", quote: QUOTE_EXC }], missing_facts: [], waiting_period: running }),
+      exception_review: () => ({
+        exceptions: [{ condition: "continuity of cover", relevant: true, status: "does_not_apply", basis_quote: "Your policy with us commenced on 02 October 2026" }],
+        question: null,
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+    expect(events().some((s) => s.startsWith("Corrected by code: the waiting period"))).toBe(false);
+  });
+
+  it("does NOT correct when the only denying quote comes from the user's answers rather than the letter", async () => {
+    seed(WITH_EXCEPTION, QUOTE_EXC, LETTER_SILENT);
+    fakeDb.cases[0].state = "ASSESS";
+    fakeDb.cases[0].rubric = null;
+    fakeDb.cases[0].answers = { accident: "No, it was not an accident" };
+    baseScript({
+      assess_case: () => ({ checks: RUBRIC_STRONG, ledger: [{ temp_id: "L1", claim: "w", page_id: "p-policy", quote: QUOTE_EXC }], missing_facts: [], waiting_period: running }),
+      exception_review: () => ({
+        exceptions: [{ condition: "accident", relevant: true, status: "does_not_apply", basis_quote: "No, it was not an accident" }],
+        question: null,
+      }),
+    });
+    expect(await runToPause("ASSESS")).toBe("AWAITING_APPROVAL");
+    expect(fakeDb.cases[0].verdict).toBe("STRONG");
+  });
+
   it("still asks when the exception is not established", async () => {
     runAsking(rubricWith("no", "no"), running, () => review());
     expect(await runToPause("ASSESS")).toBe("AWAITING_USER");

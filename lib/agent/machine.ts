@@ -427,7 +427,7 @@ export function locateQuote(
  * the exception's condition did NOT occur ("not caused by any accident").
  * Only when the waiting period is verifiably still running, no other exclusion
  * applies, the cited clause has an exception, and EVERY relevant exception is
- * ruled out by a verified quote from the letter or the user's answers, code
+ * ruled out by a verified, explicitly negating quote from the INSURER'S LETTER, code
  * sets C2 to "yes", C3 to "no" and C5 to "yes" and drops the redundant question (eval case
  * T). Never fires when anything is unestablished, when the period expired, or
  * when its dates are unknown, so it cannot turn a winnable appeal into a
@@ -452,10 +452,11 @@ async function resolveRuledOutExceptions(
   if (!clauseTexts.size) return { rubric, note: null };
   const letter = await loadRejectionText(c.id);
   const review = await exceptionReview(c.id, [...clauseTexts], letter, answersWithQuestions(c), c.facts!);
-  if (!allRelevantExceptionsRuledOut(review.exceptions, [letter, ...Object.values(c.answers ?? {})])) {
+  // Letter only: the insurer's own explicit statement. Never the user's answers (they may establish the exception; eval case R).
+  if (!allRelevantExceptionsRuledOut(review.exceptions, [letter])) {
     return { rubric, note: null };
   }
-  const note = "Corrected by code: the waiting period was still running and the insurer's letter or the user's answers explicitly rule out every exception that could override it, so no overriding clause applies and nothing is left to ask.";
+  const note = "Corrected by code: the waiting period was still running and the insurer's letter explicitly rules out every exception that could override it, so no overriding clause applies and nothing is left to ask.";
   return {
     rubric: rubric.map((r) => {
       // The period is code-verified as still running, so the clause's own condition holds (C2): a model that
