@@ -1,0 +1,19 @@
+{
+  "ranAt": "2026-11-23T08:21:40.815Z",
+  "provider": "google",
+  "model_fast": "gemini-3.5-flash-lite",
+  "model_strong": "gemini-3.5-flash-lite",
+  "results": [
+    {
+      "case": "heldout_r_30day_illness_continuity_exception",
+      "expected": "STRONG",
+      "got": "STRONG",
+      "finalState": "AWAITING_APPROVAL",
+      "askedException": false,
+      "verifiedPct": 100,
+      "steps": 10,
+      "ms": 41720,
+      "tokens": 16030
+    }
+  ]
+}
